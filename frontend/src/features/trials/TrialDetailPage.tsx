@@ -71,7 +71,8 @@ interface Evaluation {
   id: string;
   tasterName: string;
   overallComment: string | null;
-  averageScore: number;
+  average?: number;
+  averageScore?: number;
   scores: EvaluationScore[];
   createdAt: string;
 }
@@ -290,9 +291,9 @@ export function TrialDetailPage() {
   }
 
   // Format radar data
-  const radarData = trial.averages.map((avg) => ({
+  const radarData = (trial.averages ?? []).map((avg) => ({
     attribute: i18n.language === 'th' ? avg.nameTh : avg.nameEn,
-    score: avg.average,
+    score: typeof avg.average === 'number' ? avg.average : 0,
     fullMark: 5,
   }));
 
@@ -383,7 +384,7 @@ export function TrialDetailPage() {
                 {t('trials.overall_score')}
               </span>
               <span className="text-xl font-bold text-orange-700">
-                {trial.overallScore ? `${trial.overallScore.toFixed(2)} / 5` : '-'}
+                {typeof trial.overallScore === 'number' ? `${trial.overallScore.toFixed(2)} / 5` : '-'}
               </span>
             </div>
           </CardContent>
@@ -626,7 +627,11 @@ export function TrialDetailPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-amber-600 flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                         <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                        {ev.averageScore.toFixed(1)}/5
+                        {typeof ev.average === 'number'
+                          ? `${ev.average.toFixed(1)}/5`
+                          : typeof ev.averageScore === 'number'
+                          ? `${ev.averageScore.toFixed(1)}/5`
+                          : '-'}
                       </span>
                       {hasPermission('trials.write') && (
                         <Button
@@ -649,8 +654,8 @@ export function TrialDetailPage() {
 
                   {/* Individual Scores */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
-                    {ev.scores.map((sc) => {
-                      const attr = trial.averages.find((a) => a.tasteAttributeId === sc.tasteAttributeId);
+                    {(ev.scores ?? []).map((sc) => {
+                      const attr = (trial.averages ?? []).find((a) => a.tasteAttributeId === sc.tasteAttributeId);
                       return (
                         <div
                           key={sc.id}
@@ -659,7 +664,9 @@ export function TrialDetailPage() {
                           <span className="text-slate-600 text-[11px] truncate">
                             {attr ? (i18n.language === 'th' ? attr.nameTh : attr.nameEn) : 'มิติ'}
                           </span>
-                          <span className="font-bold text-slate-900 ml-1">{sc.score}</span>
+                          <span className="font-bold text-slate-900 ml-1">
+                            {typeof sc.score === 'number' ? sc.score.toFixed(1) : (sc.score ?? '-')}
+                          </span>
                         </div>
                       );
                     })}
@@ -784,7 +791,7 @@ export function TrialDetailPage() {
                           {i18n.language === 'th' ? attr.nameTh : attr.nameEn}
                         </span>
                         <span className="font-bold text-sm text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
-                          {currentScore.toFixed(1)} / 5
+                          {typeof currentScore === 'number' ? `${currentScore.toFixed(1)} / 5` : '-'}
                         </span>
                       </div>
                       <Slider

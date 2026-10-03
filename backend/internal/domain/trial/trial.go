@@ -1,6 +1,7 @@
 package trial
 
 import (
+	"encoding/json"
 	"math"
 	"time"
 
@@ -78,6 +79,17 @@ type Evaluation struct {
 	Scores         []EvaluationScore `json:"scores"`
 	CreatedBy      uuid.UUID         `json:"createdBy"`
 	CreatedAt      time.Time         `json:"createdAt"`
+}
+
+func (e Evaluation) MarshalJSON() ([]byte, error) {
+	type Alias Evaluation
+	return json.Marshal(&struct {
+		Alias
+		AverageScore float64 `json:"averageScore"`
+	}{
+		Alias:        Alias(e),
+		AverageScore: e.AverageScore,
+	})
 }
 
 type EvaluationScore struct {

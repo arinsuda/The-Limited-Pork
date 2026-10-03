@@ -532,7 +532,10 @@ export function RecipeDetailPage() {
                       />
                       <YAxis domain={[0, 5]} stroke="#94a3b8" fontSize={12} />
                       <Tooltip
-                        formatter={(val: any) => [`${Number(val).toFixed(2)} / 5`, 'คะแนนเฉลี่ย']}
+                        formatter={(val: any) => [
+                          val != null && !isNaN(Number(val)) ? `${Number(val).toFixed(2)} / 5` : '-',
+                          'คะแนนเฉลี่ย',
+                        ]}
                         labelFormatter={(label) => `ผลทดสอบรอบที่ ${label}`}
                       />
                       <Line

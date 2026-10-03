@@ -224,7 +224,7 @@ export function TrialComparePage() {
                   <TableCell key={tr.id} className="text-sm font-bold text-amber-600">
                     <span className="flex items-center gap-1">
                       <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                      {tr.overallScore ? `${tr.overallScore.toFixed(2)} / 5` : '-'}
+                      {typeof tr.overallScore === 'number' ? `${tr.overallScore.toFixed(2)} / 5` : '-'}
                     </span>
                   </TableCell>
                 ))}
@@ -235,7 +235,7 @@ export function TrialComparePage() {
                 <TableCell className="font-semibold text-xs text-slate-600">อัตราผลผลิต (% Yield)</TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id} className="text-xs font-bold text-slate-800">
-                    {tr.actualYieldPct ? `${tr.actualYieldPct}%` : '-'}
+                    {typeof tr.actualYieldPct === 'number' ? `${tr.actualYieldPct}%` : '-'}
                   </TableCell>
                 ))}
               </TableRow>
@@ -247,10 +247,10 @@ export function TrialComparePage() {
                     • {i18n.language === 'th' ? attr.nameTh : attr.nameEn}
                   </TableCell>
                   {trials.map((tr) => {
-                    const avg = tr.averages.find((a) => a.tasteAttributeId === attr.id);
+                    const avg = (tr.averages ?? []).find((a) => a.tasteAttributeId === attr.id);
                     return (
                       <TableCell key={tr.id} className="text-xs font-semibold text-slate-900">
-                        {avg ? avg.average.toFixed(1) : '-'}
+                        {avg && typeof avg.average === 'number' ? avg.average.toFixed(1) : '-'}
                       </TableCell>
                     );
                   })}

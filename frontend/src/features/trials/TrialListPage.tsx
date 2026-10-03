@@ -277,7 +277,7 @@ export function TrialListPage() {
                         <span className="text-[10px] text-slate-400 block">{t('trials.overall_score')}</span>
                         <span className="text-xs font-bold text-amber-600 flex items-center justify-center gap-1 mt-0.5">
                           <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                          {trial.overallScore ? `${trial.overallScore.toFixed(2)}/5` : '-'}
+                          {typeof trial.overallScore === 'number' ? `${trial.overallScore.toFixed(2)}/5` : '-'}
                         </span>
                       </div>
                     </div>
