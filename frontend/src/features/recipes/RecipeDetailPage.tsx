@@ -177,6 +177,8 @@ export function RecipeDetailPage() {
   }
 
   const current = recipe.currentVersion;
+  const ingredients = current?.ingredients ?? [];
+  const steps = current?.steps ?? [];
 
   return (
     <div className="space-y-6">
@@ -261,7 +263,7 @@ export function RecipeDetailPage() {
             {t('recipes.steps')} & วัตถุดิบ (v{current?.versionNo})
           </TabsTrigger>
           <TabsTrigger value="history" className="text-xs">
-            {t('recipes.versions_history')} ({versions.length})
+            {t('recipes.versions_history')} ({(versions ?? []).length})
           </TabsTrigger>
           <TabsTrigger value="trend" className="text-xs">
             {t('recipes.score_trend')}
@@ -329,7 +331,7 @@ export function RecipeDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {current?.ingredients.length === 0 ? (
+              {ingredients.length === 0 ? (
                 <div className="p-6 text-center text-xs text-slate-400">ไม่มีวัตถุดิบเสริมระบุไว้</div>
               ) : (
                 <Table>
@@ -342,7 +344,7 @@ export function RecipeDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {current?.ingredients.map((ing) => (
+                    {ingredients.map((ing) => (
                       <TableRow key={ing.id}>
                         <TableCell className="text-center font-medium text-xs text-slate-400">
                           {ing.lineNo}
@@ -375,11 +377,11 @@ export function RecipeDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-              {current?.steps.length === 0 ? (
+              {steps.length === 0 ? (
                 <div className="py-6 text-center text-xs text-slate-400">ยังไม่มีขั้นตอนระบุไว้</div>
               ) : (
                 <div className="relative border-l-2 border-orange-200 ml-4 pl-6 space-y-6">
-                  {current?.steps.map((st) => (
+                  {steps.map((st) => (
                     <div key={st.id} className="relative group">
                       {/* Timeline dot */}
                       <div className="absolute -left-[31px] top-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-600 text-[11px] font-bold text-white shadow">
@@ -513,7 +515,7 @@ export function RecipeDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {scoreTrend.length === 0 ? (
+              {(scoreTrend ?? []).length === 0 ? (
                 <div className="py-12 text-center text-xs text-slate-400">
                   ยังไม่มีผลการทดสอบสำหรับสูตรนี้ ไปที่หน้า &quot;ผลการทดสอบ (R&D)&quot; เพื่อเริ่มบันทึกผล
                 </div>

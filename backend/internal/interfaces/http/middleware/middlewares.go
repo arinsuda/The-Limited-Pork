@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 	"github.com/mookrob/backend/internal/application/ports"
 	"github.com/mookrob/backend/internal/interfaces/http/response"
@@ -31,7 +32,7 @@ func RequestID(next http.Handler) http.Handler {
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		ww := &statusResponseWriter{ResponseWriter: w, status: http.StatusOK}
+		ww := chiMiddleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 		next.ServeHTTP(ww, r)
 
@@ -39,22 +40,12 @@ func Logger(next http.Handler) http.Handler {
 		slog.Info("http request",
 			"method", r.Method,
 			"path", r.URL.Path,
-			"status", ww.status,
+			"status", ww.Status(),
 			"duration_ms", duration.Milliseconds(),
 			"request_id", r.Header.Get("X-Request-ID"),
 			"ip", r.RemoteAddr,
 		)
 	})
-}
-
-type statusResponseWriter struct {
-	http.ResponseWriter
-	status int
-}
-
-func (w *statusResponseWriter) WriteHeader(status int) {
-	w.status = status
-	w.ResponseWriter.WriteHeader(status)
 }
 
 func Recoverer(next http.Handler) http.Handler {

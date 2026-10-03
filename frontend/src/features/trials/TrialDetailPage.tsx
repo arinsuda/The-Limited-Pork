@@ -296,6 +296,10 @@ export function TrialDetailPage() {
     fullMark: 5,
   }));
 
+  const steps = trial.steps ?? [];
+  const evaluations = trial.evaluations ?? [];
+  const attachments = trial.attachments ?? [];
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -489,7 +493,7 @@ export function TrialDetailPage() {
               {t('trials.radar_chart_title')}
             </CardTitle>
             <span className="text-xs text-slate-400 font-medium">
-              {trial.evaluations.length} {t('trials.evaluations_count')}
+              {evaluations.length} {t('trials.evaluations_count')}
             </span>
           </CardHeader>
           <CardContent className="p-4">
@@ -528,7 +532,7 @@ export function TrialDetailPage() {
           </CardHeader>
           <CardContent className="p-4 space-y-4 max-h-96 overflow-y-auto">
             <div className="relative border-l-2 border-orange-200 ml-3 pl-5 space-y-4">
-              {trial.steps.map((st) => (
+              {steps.map((st) => (
                 <div key={st.id} className="relative">
                   <div className="absolute -left-[27px] top-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-600 text-[10px] font-bold text-white shadow">
                     {st.stepNo}
@@ -593,13 +597,13 @@ export function TrialDetailPage() {
           )}
         </CardHeader>
         <CardContent className="p-4">
-          {trial.evaluations.length === 0 ? (
+          {evaluations.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400">
               ยังไม่มีการประเมินจากผู้ชิม
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {trial.evaluations.map((ev) => (
+              {evaluations.map((ev) => (
                 <div
                   key={ev.id}
                   className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-3"
@@ -693,13 +697,13 @@ export function TrialDetailPage() {
           )}
         </CardHeader>
         <CardContent className="p-4">
-          {trial.attachments.length === 0 ? (
+          {attachments.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400">
               ยังไม่มีรูปภาพผลงานหมูกรอบในรอบนี้ กดปุ่มอัปโหลดรูปภาพเพื่อบันทึก
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {trial.attachments.map((att) => (
+              {attachments.map((att) => (
                 <div
                   key={att.id}
                   className="group relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 aspect-4/3 shadow-2xs"
