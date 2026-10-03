@@ -39,6 +39,23 @@ up-all: ## Build & run whole stack in containers (profile app)
 down-all: ## Stop whole stack
 	$(COMPOSE) --profile app down
 
+## ---- Standalone Docker Run ----
+.PHONY: docker-build docker-run docker-down docker-status docker-logs
+docker-build: ## Build Backend & Frontend images
+	./scripts/docker-run.sh build
+
+docker-run: ## Start all services via pure 'docker run'
+	./scripts/docker-run.sh up
+
+docker-down: ## Stop and remove all containers started via 'docker run'
+	./scripts/docker-run.sh down
+
+docker-status: ## Check status of docker run containers
+	./scripts/docker-run.sh status
+
+docker-logs: ## Tail logs of docker run containers
+	./scripts/docker-run.sh logs
+
 ## ---- Backend ----
 .PHONY: migrate be-dev be-run be-test be-lint
 migrate: ## Apply DB migrations
