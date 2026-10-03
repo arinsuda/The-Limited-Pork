@@ -265,6 +265,23 @@ cmd_up() {
     /app/migrate
 
   # 7. Backend API
+  run_backend_container
+
+  # 8. Frontend Web
+  run_frontend_container
+
+  echo ""
+  log_succ "All services started successfully with 'docker run'!"
+  echo "=========================================================================="
+  echo -e "  🌐 Frontend Web URL : ${COLOR_GREEN}http://localhost:${WEB_PORT}${COLOR_RESET}"
+  echo -e "  🚀 Backend API URL  : ${COLOR_GREEN}http://localhost:${API_PORT}${COLOR_RESET}"
+  echo -e "  🗄️  MinIO Console    : ${COLOR_GREEN}http://localhost:${MINIO_CONSOLE_PORT}${COLOR_RESET} (User: ${MINIO_ROOT_USER})"
+  echo -e "  🐘 PostgreSQL Port  : ${COLOR_GREEN}localhost:${POSTGRES_PORT}${COLOR_RESET}"
+  echo -e "  ⚡ Redis Port       : ${COLOR_GREEN}localhost:${REDIS_PORT}${COLOR_RESET}"
+  echo "=========================================================================="
+}
+
+run_backend_container() {
   if docker ps -a --format '{{.Names}}' | grep -Eq "^${BACKEND_CONTAINER}\$"; then
     log_warn "Container ${BACKEND_CONTAINER} already exists. Removing older instance..."
     docker rm -f "${BACKEND_CONTAINER}" >/dev/null
@@ -301,8 +318,9 @@ cmd_up() {
     -e AUTO_MIGRATE=false \
     "${BACKEND_IMAGE}" >/dev/null
   wait_for_health "${BACKEND_CONTAINER}" 20
+}
 
-  # 8. Frontend Web
+run_frontend_container() {
   if docker ps -a --format '{{.Names}}' | grep -Eq "^${FRONTEND_CONTAINER}\$"; then
     log_warn "Container ${FRONTEND_CONTAINER} already exists. Removing older instance..."
     docker rm -f "${FRONTEND_CONTAINER}" >/dev/null
@@ -320,16 +338,32 @@ cmd_up() {
     -e LISTEN_PORT=80 \
     "${FRONTEND_IMAGE}" >/dev/null
   wait_for_health "${FRONTEND_CONTAINER}" 15
+}
 
-  echo ""
-  log_succ "All services started successfully with 'docker run'!"
-  echo "=========================================================================="
-  echo -e "  🌐 Frontend Web URL : ${COLOR_GREEN}http://localhost:${WEB_PORT}${COLOR_RESET}"
-  echo -e "  🚀 Backend API URL  : ${COLOR_GREEN}http://localhost:${API_PORT}${COLOR_RESET}"
-  echo -e "  🗄️  MinIO Console    : ${COLOR_GREEN}http://localhost:${MINIO_CONSOLE_PORT}${COLOR_RESET} (User: ${MINIO_ROOT_USER})"
-  echo -e "  🐘 PostgreSQL Port  : ${COLOR_GREEN}localhost:${POSTGRES_PORT}${COLOR_RESET}"
-  echo -e "  ⚡ Redis Port       : ${COLOR_GREEN}localhost:${REDIS_PORT}${COLOR_RESET}"
-  echo "=========================================================================="
+cmd_rebuild_backend() {
+  log_info "Rebuilding Backend Docker image: ${BACKEND_IMAGE}..."
+  docker build -t "${BACKEND_IMAGE}" -f "${ROOT_DIR}/backend/Dockerfile" "${ROOT_DIR}/backend"
+  run_backend_container
+  log_succ "Backend container successfully recreated!"
+}
+
+cmd_rebuild_frontend() {
+  log_info "Rebuilding Frontend Docker image: ${FRONTEND_IMAGE}..."
+  docker build -t "${FRONTEND_IMAGE}" \
+    --build-arg VITE_API_BASE_URL="${WEB_API_BASE_URL:-/api/v1}" \
+    -f "${ROOT_DIR}/frontend/Dockerfile" "${ROOT_DIR}/frontend"
+  run_frontend_container
+  log_succ "Frontend container successfully recreated!"
+}
+
+cmd_watch() {
+  shift || true
+  if command -v python3 >/dev/null 2>&1; then
+    exec python3 "${ROOT_DIR}/scripts/watcher.py" --root-dir "${ROOT_DIR}" --script "${BASH_SOURCE[0]}" "$@"
+  else
+    log_err "python3 is required for the file watcher. Please install python3."
+    exit 1
+  fi
 }
 
 # ------------------------------------------------------------------------------
@@ -376,6 +410,15 @@ case "$1" in
   build)
     cmd_build
     ;;
+  rebuild-backend)
+    cmd_rebuild_backend
+    ;;
+  rebuild-frontend)
+    cmd_rebuild_frontend
+    ;;
+  watch)
+    cmd_watch "$@"
+    ;;
   status)
     cmd_status
     ;;
@@ -383,11 +426,12 @@ case "$1" in
     cmd_logs "$2"
     ;;
   *)
-    echo "Usage: $0 {up|down|build|status|logs [service]}"
+    echo "Usage: $0 {up|down|build|watch|status|logs [service]|rebuild-backend|rebuild-frontend}"
     echo ""
     echo "Examples:"
-    echo "  $0 build        # Build backend and frontend images"
     echo "  $0 up           # Run all containers via docker run"
+    echo "  $0 watch        # Watch source code changes and auto-rebuild containers"
+    echo "  $0 build        # Build backend and frontend images"
     echo "  $0 status       # View container status"
     echo "  $0 logs api     # Tail backend logs"
     echo "  $0 down         # Stop and cleanup containers"

@@ -109,6 +109,14 @@ services:
     ports:
       - "${API_PORT:-8080}:${API_PORT:-8080}"
     profiles: ["app"]
+    develop:
+      watch:
+        - action: rebuild
+          path: ../backend
+          ignore:
+            - bin/
+            - tmp/
+            - .git/
 
   web:
     build:
@@ -120,6 +128,14 @@ services:
     ports:
       - "${WEB_PORT:-8081}:80"
     profiles: ["app"]
+    develop:
+      watch:
+        - action: rebuild
+          path: ../frontend
+          ignore:
+            - node_modules/
+            - dist/
+            - .git/
 
 volumes:
   pg_data:

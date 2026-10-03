@@ -37,6 +37,20 @@ make docker-run
 ./scripts/docker-run.sh up
 ```
 
+### 🔁 ตรวจสอบการเปลี่ยนแปลงและ Build ใหม่อัตโนมัติ (Watch & Auto-Rebuild)
+เมื่อสั่งรันคำสั่งนี้ ตัวตรวจจับ (`scripts/watcher.py`) จะคอยเฝ้าดูโค้ดใน `backend/` และ `frontend/`:
+- **เมื่อแก้โค้ด Go/Backend**: จะ re-build อิมเมจ backend และ restart เฉพาะคอนเทนเนอร์ `moo-krob-api` ให้อัตโนมัติ โดยไม่กระทบฐานข้อมูล
+- **เมื่อแก้โค้ด React/Frontend**: จะ re-build อิมเมจ frontend และ restart เฉพาะคอนเทนเนอร์ `moo-krob-web` ให้อัตโนมัติ
+- มีระบบ **Debounce** ป้องกันการ build ซ้ำซ้อนขณะบันทึกไฟล์หลายไฟล์พร้อมกัน
+```bash
+make docker-watch
+# หรือ
+./scripts/docker-run.sh watch
+
+# หรือหากใช้ Docker Compose:
+docker compose -f deploy/docker-compose.yml --profile app watch
+```
+
 ### ตรวจสอบสถานะและ Healthcheck
 ```bash
 make docker-status

@@ -56,6 +56,9 @@ docker-status: ## Check status of docker run containers
 docker-logs: ## Tail logs of docker run containers
 	./scripts/docker-run.sh logs
 
+docker-watch: ## Watch code changes and auto-rebuild containers
+	./scripts/docker-run.sh watch
+
 ## ---- Backend ----
 .PHONY: migrate be-dev be-run be-test be-lint
 migrate: ## Apply DB migrations
