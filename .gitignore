@@ -1,0 +1,28 @@
+# OS / editors
+.DS_Store
+*.swp
+.idea/
+
+# Env & secrets (examples are committed)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Go
+backend/bin/
+backend/tmp/
+backend/coverage.*
+*.test
+*.out
+
+# Node
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
+npm-debug.log*
+
+# Misc
+*.log
