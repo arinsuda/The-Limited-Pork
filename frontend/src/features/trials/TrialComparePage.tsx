@@ -219,7 +219,9 @@ export function TrialComparePage() {
 
               {/* Overall Taste Score */}
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">คะแนนภาพรวม (1-5)</TableCell>
+                <TableCell className="font-semibold text-xs text-slate-600">
+                  {t('trials.overall_score_range', { min: 0, max: 5, defaultValue: 'คะแนนภาพรวม (0-5)' })}
+                </TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id} className="text-sm font-bold text-amber-600">
                     <span className="flex items-center gap-1">
@@ -248,9 +250,14 @@ export function TrialComparePage() {
                   </TableCell>
                   {trials.map((tr) => {
                     const avg = (tr.averages ?? []).find((a) => a.tasteAttributeId === attr.id);
+                    const isZero = avg && typeof avg.average === 'number' && avg.average === 0;
                     return (
                       <TableCell key={tr.id} className="text-xs font-semibold text-slate-900">
-                        {avg && typeof avg.average === 'number' ? avg.average.toFixed(1) : '-'}
+                        {avg && typeof avg.average === 'number'
+                          ? isZero
+                            ? `0 (${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})`
+                            : avg.average.toFixed(1)
+                          : '-'}
                       </TableCell>
                     );
                   })}

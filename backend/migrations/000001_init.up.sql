@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS taste_attributes (
     name_en VARCHAR(255) NOT NULL,
     description_th TEXT,
     description_en TEXT,
-    min_score INT NOT NULL DEFAULT 1,
+    min_score INT NOT NULL DEFAULT 0,
     max_score INT NOT NULL DEFAULT 5,
     color VARCHAR(20) NOT NULL DEFAULT '#f97316',
     sort_order INT NOT NULL DEFAULT 0,

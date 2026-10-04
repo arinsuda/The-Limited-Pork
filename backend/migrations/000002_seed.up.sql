@@ -70,16 +70,16 @@ INSERT INTO units (id, code, symbol, dimension, base_unit_id, factor_to_base, na
     ('01925b31-0009-7000-8000-000000000009', 'MINUTE', 'นาที', 'TIME', NULL, 1.0, 'นาที', 'Minute', 9, true)
 ON CONFLICT (id) DO NOTHING;
 
--- 4. Taste Attributes (min_score 1, max_score 5, customizable via UI)
+-- 4. Taste Attributes (min_score 0, max_score 5, customizable via UI: 0 = ไม่มีเลย / None)
 INSERT INTO taste_attributes (id, code, name_th, name_en, description_th, description_en, min_score, max_score, color, sort_order, is_active) VALUES
-    ('01925b32-0001-7000-8000-000000000001', 'CRISPINESS', 'ความกรอบ', 'Crispiness', 'ความกรอบฟูของหนังหมู กรอบนาน ไม่เหนียว', 'Crispiness of the pork skin', 1, 5, '#eab308', 1, true),
-    ('01925b32-0002-7000-8000-000000000002', 'UMAMI', 'นัว / กลมกล่อม', 'Umami', 'ความกลมกล่อม ความเข้มข้นรสเนื้อและเครื่องหมัก', 'Savory depth and richness', 1, 5, '#f97316', 2, true),
-    ('01925b32-0003-7000-8000-000000000003', 'SALTY', 'เค็ม', 'Salty', 'ความพอดีของรสเค็ม ไม่เค็มแหลมหรือจืดเกินไป', 'Saltiness balance', 1, 5, '#3b82f6', 3, true),
-    ('01925b32-0004-7000-8000-000000000004', 'SWEET', 'หวาน', 'Sweet', 'ความหวานธรรมชาติจากเนื้อหมูหรือซอสหมัก', 'Natural sweetness', 1, 5, '#ec4899', 4, true),
-    ('01925b32-0005-7000-8000-000000000005', 'SOUR', 'เปรี้ยว', 'Sour', 'ความเปรี้ยวจากน้ำส้มสายชูที่ทาหนัง (ต้องไม่หลงเหลือรสเปรี้ยวโดด)', 'Sourness level', 1, 5, '#84cc16', 5, true),
-    ('01925b32-0006-7000-8000-000000000006', 'SPICY', 'เผ็ด', 'Spicy', 'ความเผ็ดร้อนจากพริกไทยหรือเครื่องเทศ', 'Spiciness from pepper/spices', 1, 5, '#ef4444', 6, true),
-    ('01925b32-0007-7000-8000-000000000007', 'TENDERNESS', 'ความนุ่มของเนื้อ', 'Tenderness', 'เนื้อหมูชุ่มฉ่ำ ไม่แห้งแข็งหรือเหนียว', 'Moistness and tenderness of the meat', 1, 5, '#a855f7', 7, true),
-    ('01925b32-0008-7000-8000-000000000008', 'AROMA', 'ความหอม', 'Aroma', 'กลิ่นหอมของหมูทอดและเครื่องเทศ ไม่มีกลิ่นคาวหรือเหม็นหืน', 'Pleasant aroma of freshly fried pork', 1, 5, '#14b8a6', 8, true)
+    ('01925b32-0001-7000-8000-000000000001', 'CRISPINESS', 'ความกรอบ', 'Crispiness', 'ความกรอบฟูของหนังหมู กรอบนาน ไม่เหนียว (0 = ไม่กรอบเลย, 5 = กรอบฟูสนั่น)', 'Crispiness of the pork skin (0 = Not crispy at all, 5 = Extremely crispy)', 0, 5, '#eab308', 1, true),
+    ('01925b32-0002-7000-8000-000000000002', 'UMAMI', 'นัว / กลมกล่อม', 'Umami', 'ความกลมกล่อม ความเข้มข้นรสเนื้อและเครื่องหมัก (0 = ไม่มีรสนัวเลย, 5 = กลมกล่อมที่สุด)', 'Savory depth and richness (0 = No umami, 5 = Rich & deep umami)', 0, 5, '#f97316', 2, true),
+    ('01925b32-0003-7000-8000-000000000003', 'SALTY', 'เค็ม', 'Salty', 'ความพอดีของรสเค็ม (0 = ไม่เค็มเลย/จืดสนิท, 5 = เค็มมาก)', 'Saltiness balance (0 = Not salty at all, 5 = Very salty)', 0, 5, '#3b82f6', 3, true),
+    ('01925b32-0004-7000-8000-000000000004', 'SWEET', 'หวาน', 'Sweet', 'ความหวานธรรมชาติจากเนื้อหมูหรือซอสหมัก (0 = ไม่หวานเลย, 5 = หวานมาก)', 'Natural sweetness (0 = Not sweet at all, 5 = Very sweet)', 0, 5, '#ec4899', 4, true),
+    ('01925b32-0005-7000-8000-000000000005', 'SOUR', 'เปรี้ยว', 'Sour', 'ความเปรี้ยวจากน้ำส้มสายชูที่ทาหนัง (0 = ไม่มีรสเปรี้ยวเลย, 5 = เปรี้ยวมาก)', 'Sourness level (0 = No sourness, 5 = Very sour)', 0, 5, '#84cc16', 5, true),
+    ('01925b32-0006-7000-8000-000000000006', 'SPICY', 'เผ็ด', 'Spicy', 'ความเผ็ดร้อนจากพริกไทยหรือเครื่องเทศ (0 = ไม่เผ็ดเลย, 5 = เผ็ดมาก)', 'Spiciness from pepper/spices (0 = Not spicy at all, 5 = Very spicy)', 0, 5, '#ef4444', 6, true),
+    ('01925b32-0007-7000-8000-000000000007', 'TENDERNESS', 'ความนุ่มของเนื้อ', 'Tenderness', 'เนื้อหมูชุ่มฉ่ำ ไม่แห้งแข็งหรือเหนียว (0 = แข็ง/เหนียวมากไม่นุ่มเลย, 5 = นุ่มละมุนที่สุด)', 'Moistness and tenderness of the meat (0 = Very tough/not tender, 5 = Extremely tender)', 0, 5, '#a855f7', 7, true),
+    ('01925b32-0008-7000-8000-000000000008', 'AROMA', 'ความหอม', 'Aroma', 'กลิ่นหอมของหมูทอดและเครื่องเทศ (0 = ไม่มีกลิ่นหอมเลย, 5 = หอมฟุ้งน่ารับประทาน)', 'Pleasant aroma of freshly fried pork (0 = No aroma, 5 = Highly aromatic)', 0, 5, '#14b8a6', 8, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. Lookup Categories & Lookups
@@ -163,6 +163,6 @@ INSERT INTO settings (key, value, value_type, description_th, description_en, is
     ('shop.name', '"หมูกรอบ มี จำกัด"'::jsonb, 'string', 'ชื่อร้าน', 'Shop Name', true, 1),
     ('shop.currency', '"THB"'::jsonb, 'string', 'สกุลเงินที่ใช้', 'Currency', true, 1),
     ('shop.timezone', '"Asia/Bangkok"'::jsonb, 'string', 'เขตเวลา', 'Timezone', true, 1),
-    ('trial.passScoreThreshold', '4.0'::jsonb, 'number', 'เกณฑ์คะแนนเฉลี่ยขั้นต่ำที่ถือว่าสูตรผ่าน (1-5)', 'Minimum score to consider trial passed', true, 1),
+    ('trial.passScoreThreshold', '4.0'::jsonb, 'number', 'เกณฑ์คะแนนเฉลี่ยขั้นต่ำที่ถือว่าสูตรผ่าน (0-5)', 'Minimum score to consider trial passed', true, 1),
     ('trial.defaultTasterName', '""'::jsonb, 'string', 'ชื่อผู้ชิมเริ่มต้นในหน้าทดสอบ', 'Default taster name', false, 1)
 ON CONFLICT (key) DO NOTHING;

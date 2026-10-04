@@ -46,7 +46,7 @@ import {
   DialogFooter,
 } from '@/shared/ui/dialog';
 import { Skeleton } from '@/shared/ui/skeleton';
-import { formatDate } from '@/shared/lib/utils';
+import { formatDate, cn } from '@/shared/lib/utils';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { toast } from 'sonner';
 
@@ -55,6 +55,8 @@ interface TasteAttribute {
   code: string;
   nameTh: string;
   nameEn: string;
+  descriptionTh?: string | null;
+  descriptionEn?: string | null;
   minScore: number;
   maxScore: number;
   color: string;
@@ -129,6 +131,8 @@ interface TrialDetail {
     nameTh: string;
     nameEn: string;
     color: string;
+    minScore?: number;
+    maxScore?: number;
     average: number;
     count: number;
   }>;
@@ -164,12 +168,14 @@ export function TrialDetailPage() {
     enabled: isEvaluationModalOpen,
   });
 
-  // Initialize sliders with middle score
+  // Initialize sliders with dynamic middle score based on min/max of each attribute
   React.useEffect(() => {
     if (attributes.length > 0 && Object.keys(scoresMap).length === 0) {
       const initial: Record<string, number> = {};
       attributes.forEach((attr) => {
-        initial[attr.id] = 4.0;
+        const min = attr.minScore ?? 0;
+        const max = attr.maxScore ?? 5;
+        initial[attr.id] = Math.round(((min + max) / 2) * 2) / 2;
       });
       setScoresMap(initial);
     }
@@ -290,11 +296,18 @@ export function TrialDetailPage() {
     );
   }
 
-  // Format radar data
+  // Format radar data dynamically
+  const maxPossibleScore = (trial.averages ?? []).length > 0
+    ? Math.max(...trial.averages.map((a) => a.maxScore ?? 5))
+    : 5;
+  const minPossibleScore = (trial.averages ?? []).length > 0
+    ? Math.min(...trial.averages.map((a) => a.minScore ?? 0))
+    : 0;
+
   const radarData = (trial.averages ?? []).map((avg) => ({
     attribute: i18n.language === 'th' ? avg.nameTh : avg.nameEn,
     score: typeof avg.average === 'number' ? avg.average : 0,
-    fullMark: 5,
+    fullMark: avg.maxScore ?? maxPossibleScore,
   }));
 
   const steps = trial.steps ?? [];
@@ -384,7 +397,9 @@ export function TrialDetailPage() {
                 {t('trials.overall_score')}
               </span>
               <span className="text-xl font-bold text-orange-700">
-                {typeof trial.overallScore === 'number' ? `${trial.overallScore.toFixed(2)} / 5` : '-'}
+                {typeof trial.overallScore === 'number'
+                  ? `${trial.overallScore.toFixed(2)} / ${maxPossibleScore}`
+                  : '-'}
               </span>
             </div>
           </CardContent>
@@ -508,7 +523,7 @@ export function TrialDetailPage() {
                   <RadarChart data={radarData}>
                     <PolarGrid stroke="#e2e8f0" />
                     <PolarAngleAxis dataKey="attribute" tick={{ fill: '#334155', fontSize: 11 }} />
-                    <PolarRadiusAxis domain={[0, 5]} stroke="#cbd5e1" />
+                    <PolarRadiusAxis domain={[minPossibleScore, maxPossibleScore]} stroke="#cbd5e1" />
                     <Radar
                       name="คะแนนเฉลี่ย"
                       dataKey="score"
@@ -516,7 +531,14 @@ export function TrialDetailPage() {
                       fill="#f97316"
                       fillOpacity={0.4}
                     />
-                    <RechartsTooltip formatter={(val: any) => [`${val} / 5`, 'คะแนน']} />
+                    <RechartsTooltip
+                      formatter={(val: any) => [
+                        Number(val) === 0
+                          ? `0 / ${maxPossibleScore} (${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})`
+                          : `${Number(val).toFixed(2)} / ${maxPossibleScore}`,
+                        'คะแนนเฉลี่ย',
+                      ]}
+                    />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
@@ -628,9 +650,9 @@ export function TrialDetailPage() {
                       <span className="text-sm font-bold text-amber-600 flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                         <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
                         {typeof ev.average === 'number'
-                          ? `${ev.average.toFixed(1)}/5`
+                          ? `${ev.average.toFixed(1)}/${maxPossibleScore}`
                           : typeof ev.averageScore === 'number'
-                          ? `${ev.averageScore.toFixed(1)}/5`
+                          ? `${ev.averageScore.toFixed(1)}/${maxPossibleScore}`
                           : '-'}
                       </span>
                       {hasPermission('trials.write') && (
@@ -656,6 +678,7 @@ export function TrialDetailPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
                     {(ev.scores ?? []).map((sc) => {
                       const attr = (trial.averages ?? []).find((a) => a.tasteAttributeId === sc.tasteAttributeId);
+                      const isZero = typeof sc.score === 'number' && sc.score === 0;
                       return (
                         <div
                           key={sc.id}
@@ -664,8 +687,12 @@ export function TrialDetailPage() {
                           <span className="text-slate-600 text-[11px] truncate">
                             {attr ? (i18n.language === 'th' ? attr.nameTh : attr.nameEn) : 'มิติ'}
                           </span>
-                          <span className="font-bold text-slate-900 ml-1">
-                            {typeof sc.score === 'number' ? sc.score.toFixed(1) : (sc.score ?? '-')}
+                          <span className={cn('font-bold ml-1', isZero ? 'text-slate-500' : 'text-slate-900')}>
+                            {typeof sc.score === 'number'
+                              ? isZero
+                                ? `0 (${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})`
+                                : sc.score.toFixed(1)
+                              : (sc.score ?? '-')}
                           </span>
                         </div>
                       );
@@ -773,37 +800,77 @@ export function TrialDetailPage() {
               />
             </div>
 
-            {/* Sliders for each Taste Attribute (1 to 5) */}
+            {/* Sliders for each Taste Attribute (Dynamic 0 to 5) */}
             <div className="space-y-3 pt-2">
-              <Label className="text-xs font-bold text-slate-700">
-                {t('trials.scores')} (1 ถึง 5)
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold text-slate-700">
+                  {attributes.length > 0
+                    ? t('trials.scores_range', {
+                        min: Math.min(...attributes.map((a) => a.minScore ?? 0)),
+                        max: Math.max(...attributes.map((a) => a.maxScore ?? 5)),
+                        defaultValue: `คะแนนแต่ละด้าน (${Math.min(...attributes.map((a) => a.minScore ?? 0))} ถึง ${Math.max(...attributes.map((a) => a.maxScore ?? 5))})`,
+                      })
+                    : t('trials.scores')}
+                </Label>
+                <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  {t('trials.score_zero_hint', { defaultValue: '0 = ไม่มีเลย' })}
+                </span>
+              </div>
               <div className="space-y-3">
                 {attributes.map((attr) => {
-                  const currentScore = scoresMap[attr.id] ?? 4.0;
+                  const min = attr.minScore ?? 0;
+                  const max = attr.maxScore ?? 5;
+                  const defaultMid = Math.round(((min + max) / 2) * 2) / 2;
+                  const currentScore = scoresMap[attr.id] ?? defaultMid;
+                  const isZero = currentScore === min && min === 0;
+
                   return (
                     <div
                       key={attr.id}
                       className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-2"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-900">
-                          {i18n.language === 'th' ? attr.nameTh : attr.nameEn}
-                        </span>
-                        <span className="font-bold text-sm text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
-                          {typeof currentScore === 'number' ? `${currentScore.toFixed(1)} / 5` : '-'}
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <span className="text-xs font-semibold text-slate-900 block">
+                            {i18n.language === 'th' ? attr.nameTh : attr.nameEn}
+                          </span>
+                          {(attr.descriptionTh || attr.descriptionEn) && (
+                            <span className="text-[10px] text-slate-500 block line-clamp-1">
+                              {i18n.language === 'th' ? attr.descriptionTh : attr.descriptionEn}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={cn(
+                            'font-bold text-xs px-2 py-0.5 rounded border shrink-0',
+                            isZero
+                              ? 'text-slate-600 bg-slate-100 border-slate-300'
+                              : 'text-orange-600 bg-orange-50 border-orange-200'
+                          )}
+                        >
+                          {isZero
+                            ? `0 / ${max} (${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})`
+                            : `${currentScore.toFixed(1)} / ${max}`}
                         </span>
                       </div>
                       <Slider
                         value={[currentScore]}
-                        min={1}
-                        max={5}
+                        min={min}
+                        max={max}
                         step={0.5}
                         onValueChange={(val) => {
-                          const v = val[0] ?? 4.0;
+                          const v = val[0] ?? min;
                           setScoresMap((prev) => ({ ...prev, [attr.id]: v }));
                         }}
                       />
+                      <div className="flex justify-between text-[10px] text-slate-600 px-0.5 font-medium">
+                        <span>
+                          {min} {min === 0 ? `(${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})` : ''}
+                        </span>
+                        <span>
+                          {max} ({t('trials.score_max_label', { defaultValue: 'มากที่สุด' })})
+                        </span>
+                      </div>
                     </div>
                   );
                 })}

@@ -315,7 +315,7 @@ run_backend_container() {
     -e JWT_ISSUER="${JWT_ISSUER}" \
     -e JWT_AUDIENCE="${JWT_AUDIENCE}" \
     -e CORS_ALLOWED_ORIGINS="http://localhost:${WEB_PORT},http://localhost:5173,http://localhost:${API_PORT}" \
-    -e AUTO_MIGRATE=false \
+    -e AUTO_MIGRATE=true \
     "${BACKEND_IMAGE}" >/dev/null
   wait_for_health "${BACKEND_CONTAINER}" 20
 }

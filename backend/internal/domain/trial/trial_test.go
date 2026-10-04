@@ -88,3 +88,42 @@ func TestOutcomeValidation(t *testing.T) {
 		t.Errorf("expected INVALID not valid")
 	}
 }
+
+func TestComputeAverages_WithZeroScore(t *testing.T) {
+	attrSpicy := uuid.New()
+	attrs := []masterdata.TasteAttribute{
+		{ID: attrSpicy, Code: "SPICY", NameTh: "เผ็ด", MinScore: 0, MaxScore: 5},
+	}
+
+	evals := []trial.Evaluation{
+		{
+			TasterName: "Chef NonSpicy",
+			Scores: []trial.EvaluationScore{
+				{TasteAttributeID: attrSpicy, Score: 0.0}, // 0 = ไม่มีเลย
+			},
+		},
+		{
+			TasterName: "Chef Mild",
+			Scores: []trial.EvaluationScore{
+				{TasteAttributeID: attrSpicy, Score: 2.0},
+			},
+		},
+	}
+
+	averages, overall := trial.ComputeAverages(evals, attrs)
+	if overall == nil {
+		t.Fatalf("expected overall not nil")
+	}
+
+	if len(averages) != 1 {
+		t.Fatalf("expected 1 average, got %d", len(averages))
+	}
+
+	// (0 + 2) / 2 = 1.0
+	if averages[0].Average != 1.0 {
+		t.Errorf("expected spicy average 1.0, got %f", averages[0].Average)
+	}
+	if *overall != 1.0 {
+		t.Errorf("expected overall 1.0, got %f", *overall)
+	}
+}
