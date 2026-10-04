@@ -115,6 +115,14 @@ export function RecipeFormModal({
     enabled: open,
   });
 
+  const { data: recipeTags = [] } = useQuery<Lookup[]>({
+    queryKey: ['masterdata', 'lookups', 'RECIPE_TAG'],
+    queryFn: () => http.get('/lookups?category=RECIPE_TAG'),
+    enabled: open,
+  });
+
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+
   const { data: ingredientsList } = useQuery<{ data: Ingredient[] }>({
     queryKey: ['masterdata', 'ingredients'],
     queryFn: () => http.get('/ingredients?pageSize=100'),
@@ -291,7 +299,7 @@ export function RecipeFormModal({
           code: code ? code : null,
           name,
           description: description ? description : null,
-          tagIds: [],
+          tagIds: selectedTagIds,
           initialVersion: versionPayload,
         });
       }
@@ -363,6 +371,34 @@ export function RecipeFormModal({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>{i18n.language === 'th' ? 'แท็ก / หมวดหมู่สูตร' : 'Recipe Tags'}</Label>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {recipeTags.map((tag) => {
+                    const isSelected = selectedTagIds.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedTagIds((prev) =>
+                            isSelected ? prev.filter((id) => id !== tag.id) : [...prev, tag.id],
+                          );
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors border ${
+                          isSelected
+                            ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {isSelected ? '✓ ' : '+ '}
+                        {i18n.language === 'th' ? tag.nameTh : tag.nameEn}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -523,13 +559,33 @@ export function RecipeFormModal({
                   รองรับการทอดหลายรอบ อุณหภูมิ ระยะเวลา และทิศทางการวางหนังหมู
                 </p>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={addStepRow} className="text-xs h-7">
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                {t('recipes.add_step')}
-              </Button>
+              <div className="flex items-center gap-2">
+                {recipeSteps.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setRecipeSteps([])}
+                    className="text-xs h-7 text-slate-500 hover:text-red-600"
+                  >
+                    {i18n.language === 'th' ? 'ล้างขั้นตอน' : 'Clear steps'}
+                  </Button>
+                )}
+                <Button type="button" variant="outline" size="sm" onClick={addStepRow} className="text-xs h-7">
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  {t('recipes.add_step')}
+                </Button>
+              </div>
             </div>
 
-            <div className="space-y-3">
+            {recipeSteps.length === 0 ? (
+              <div className="py-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg">
+                {i18n.language === 'th'
+                  ? 'ยังไม่มีขั้นตอน คลิก "เพิ่มขั้นตอน" เพื่อระบุขั้นตอนการปรุง/การเคี่ยว/การทอด'
+                  : 'No steps yet. Click "Add Step" to define cooking/mixing/frying steps.'}
+              </div>
+            ) : (
+              <div className="space-y-3">
               {recipeSteps.map((step, idx) => {
                 const st = stepTypes.find((s) => s.id === step.stepTypeId);
                 const roundLabel = getStepRoundLabel(idx);
@@ -671,6 +727,7 @@ export function RecipeFormModal({
                 );
               })}
             </div>
+            )}
           </div>
         </div>
 

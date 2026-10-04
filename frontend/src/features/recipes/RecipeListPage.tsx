@@ -21,6 +21,13 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import { RecipeFormModal } from './RecipeFormModal';
 import { useAuthStore } from '@/features/auth/auth-store';
 
+interface RecipeTag {
+  id: string;
+  code: string;
+  nameTh: string;
+  nameEn: string;
+}
+
 interface RecipeSummary {
   id: string;
   code: string;
@@ -32,6 +39,7 @@ interface RecipeSummary {
   latestTrialDate: string | null;
   bestOverallScore: number | null;
   coverUrl: string | null;
+  tags?: RecipeTag[] | null;
   createdAt: string;
 }
 
@@ -46,20 +54,28 @@ interface RecipeListResponse {
 }
 
 export function RecipeListPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission } = useAuthStore();
 
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [selectedTagId, setSelectedTagId] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Fetch Recipe Tags master data
+  const { data: recipeTags = [] } = useQuery<RecipeTag[]>({
+    queryKey: ['masterdata', 'lookups', 'RECIPE_TAG'],
+    queryFn: () => http.get('/lookups?category=RECIPE_TAG'),
+  });
+
   const { data: response, isLoading } = useQuery<RecipeListResponse>({
-    queryKey: ['recipes', 'list', search, selectedStatus],
+    queryKey: ['recipes', 'list', search, selectedStatus, selectedTagId],
     queryFn: () => {
       const params = new URLSearchParams();
       if (search) params.set('q', search);
       if (selectedStatus) params.set('status', selectedStatus);
+      if (selectedTagId) params.set('tagId', selectedTagId);
       params.set('pageSize', '50');
       return http.get(`/recipes?${params.toString()}`);
     },
@@ -137,6 +153,38 @@ export function RecipeListPage() {
         </div>
       </div>
 
+      {/* Recipe Tag Filter Tabs */}
+      {recipeTags.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <span className="text-slate-400 font-medium whitespace-nowrap mr-1">
+            {i18n.language === 'th' ? 'หมวด / แท็ก:' : 'Tags:'}
+          </span>
+          <button
+            onClick={() => setSelectedTagId('')}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap border ${
+              selectedTagId === ''
+                ? 'bg-slate-800 text-white border-slate-800 shadow-xs'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            {i18n.language === 'th' ? 'ทั้งหมด' : 'All'}
+          </button>
+          {recipeTags.map((tag) => (
+            <button
+              key={tag.id}
+              onClick={() => setSelectedTagId(selectedTagId === tag.id ? '' : tag.id)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap border ${
+                selectedTagId === tag.id
+                  ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {i18n.language === 'th' ? tag.nameTh : tag.nameEn}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Recipe Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -157,7 +205,9 @@ export function RecipeListPage() {
           </div>
           <h3 className="text-base font-semibold text-slate-900">{t('common.no_data')}</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            ยังไม่มีสูตรหมูกรอบในระบบ เริ่มต้นสร้างสูตรแรกเพื่อจดบันทึกและนำไปทดสอบทอด
+            {selectedTagId
+              ? (i18n.language === 'th' ? 'ไม่พบสูตรในหมวดนี้' : 'No recipes found for this tag')
+              : 'ยังไม่มีสูตรในระบบ เริ่มต้นสร้างสูตรแรกเพื่อจดบันทึกและนำไปทดสอบ'}
           </p>
           {hasPermission('recipes.write') && (
             <Button onClick={() => setIsModalOpen(true)} className="mt-4" size="sm">
@@ -186,7 +236,9 @@ export function RecipeListPage() {
                     <div className="text-white/80 flex flex-col items-center">
                       <Sparkles className="h-10 w-10 stroke-1 mb-1 text-amber-200" />
                       <span className="text-xs font-semibold tracking-wider uppercase text-amber-100">
-                        Crispy Pork Formula
+                        {rec.tags?.some((t) => t.code === 'DIPPING_SAUCE')
+                          ? 'Dipping Sauce Formula'
+                          : 'Crispy Pork Formula'}
                       </span>
                     </div>
                   )}
@@ -207,6 +259,21 @@ export function RecipeListPage() {
                     {rec.description || 'ไม่มีคำอธิบายเพิ่มเติม'}
                   </p>
                 </CardHeader>
+
+                {/* Recipe Tags Badges */}
+                {rec.tags && rec.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 px-4 pb-2">
+                    {rec.tags.map((tag) => (
+                      <Badge
+                        key={tag.id}
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-800 border-amber-200"
+                      >
+                        {i18n.language === 'th' ? tag.nameTh : tag.nameEn}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
 
                 <CardContent className="px-4 pb-4 pt-1 space-y-3">
                   <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-lg bg-slate-50 border border-slate-100 text-center">

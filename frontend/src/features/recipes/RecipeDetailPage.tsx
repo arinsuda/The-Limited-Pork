@@ -43,6 +43,12 @@ interface RecipeDetail {
   status: 'DRAFT' | 'TESTING' | 'APPROVED' | 'ARCHIVED';
   version: number;
   coverUrl: string | null;
+  tags?: Array<{
+    id: string;
+    code: string;
+    nameTh: string;
+    nameEn: string;
+  }> | null;
   currentVersion: {
     id: string;
     versionNo: number;
@@ -210,6 +216,15 @@ export function RecipeDetailPage() {
               >
                 {t(`recipes.status_${recipe.status.toLowerCase()}`)}
               </Badge>
+              {recipe.tags && recipe.tags.map((tag) => (
+                <Badge
+                  key={tag.id}
+                  variant="secondary"
+                  className="bg-amber-100 text-amber-800 border-amber-200"
+                >
+                  {i18n.language === 'th' ? tag.nameTh : tag.nameEn}
+                </Badge>
+              ))}
             </div>
             {recipe.description && (
               <p className="text-xs text-slate-500 mt-1">{recipe.description}</p>
