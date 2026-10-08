@@ -204,7 +204,7 @@ export function TrialFormModal({
         round++;
       }
     }
-    return i18n.language === 'th' ? `(ทอดรอบที่ ${round})` : `(Round ${round})`;
+    return t('recipes.round_number', { round });
   };
 
   // Submit
@@ -241,7 +241,7 @@ export function TrialFormModal({
       });
     },
     onSuccess: () => {
-      toast.success(i18n.language === 'th' ? 'บันทึกผลทดสอบสำเร็จ' : 'Trial recorded successfully');
+      toast.success(t('trials.trial_recorded'));
       queryClient.invalidateQueries({ queryKey: ['trials'] });
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
       onOpenChange(false);
@@ -292,10 +292,10 @@ export function TrialFormModal({
             </div>
 
             <div className="space-y-1.5 sm:col-span-3">
-              <Label htmlFor="trial-title">หัวข้อการทดสอบรอบนี้</Label>
+              <Label htmlFor="trial-title">{t('trials.trial_title')}</Label>
               <Input
                 id="trial-title"
-                placeholder="เช่น ทดสอบอุณหภูมิ 200°C หงายหนังขึ้น 5 นาที"
+                placeholder={t('trials.trial_title_placeholder')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
@@ -314,7 +314,7 @@ export function TrialFormModal({
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">หน่วยหมูสด</Label>
+              <Label className="text-xs">{t('trials.raw_unit')}</Label>
               <select
                 className="w-full h-9 rounded-md border border-slate-300 bg-white px-2 text-xs"
                 value={inputUnitId}
@@ -338,7 +338,7 @@ export function TrialFormModal({
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">หน่วยหมูกรอบ</Label>
+              <Label className="text-xs">{t('trials.fried_unit')}</Label>
               <select
                 className="w-full h-9 rounded-md border border-slate-300 bg-white px-2 text-xs"
                 value={outputUnitId}
@@ -375,7 +375,7 @@ export function TrialFormModal({
                 value={weatherId}
                 onChange={(e) => setWeatherId(e.target.value)}
               >
-                <option value="">-- ไม่ระบุ --</option>
+                <option value="">{t('trials.unspecified')}</option>
                 {weathers.map((w) => (
                   <option key={w.id} value={w.id}>
                     {i18n.language === 'th' ? w.nameTh : w.nameEn}
@@ -391,7 +391,7 @@ export function TrialFormModal({
               <div>
                 <h4 className="text-sm font-semibold text-slate-900">{t('trials.frying_steps')}</h4>
                 <p className="text-[11px] text-slate-500">
-                  ปรับอุณหภูมิ เวลา และทิศทางหมูที่ทำจริงในรอบนี้
+                  {t('trials.frying_steps_desc')}
                 </p>
               </div>
               <Button type="button" variant="outline" size="sm" onClick={addStepRow} className="text-xs h-7">
@@ -452,7 +452,7 @@ export function TrialFormModal({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-3">
                         <Input
-                          placeholder="ชื่อขั้นตอน เช่น ทอดรอบแรกไฟกลาง หนังคว่ำลง"
+                          placeholder={t('trials.step_title_placeholder')}
                           className="h-8 text-xs"
                           value={step.title}
                           onChange={(e) => {
@@ -469,7 +469,7 @@ export function TrialFormModal({
                           <Label className="text-[11px] text-slate-600">{t('recipes.temperature')}</Label>
                           <Input
                             type="number"
-                            placeholder="เช่น 160"
+                            placeholder={t('trials.temp_placeholder')}
                             className="h-8 text-xs"
                             value={step.temperatureC}
                             onChange={(e) => {
@@ -487,7 +487,7 @@ export function TrialFormModal({
                           <Label className="text-[11px] text-slate-600">{t('recipes.duration')}</Label>
                           <Input
                             type="number"
-                            placeholder="เช่น 15"
+                            placeholder={t('trials.duration_placeholder')}
                             className="h-8 text-xs"
                             value={step.durationMinutes}
                             onChange={(e) => {
@@ -513,7 +513,7 @@ export function TrialFormModal({
                               );
                             }}
                           >
-                            <option value="">-- ไม่ระบุ --</option>
+                            <option value="">{t('trials.unspecified')}</option>
                             {orientations.map((l) => (
                               <option key={l.id} value={l.id}>
                                 {i18n.language === 'th' ? l.nameTh : l.nameEn}
@@ -534,7 +534,7 @@ export function TrialFormModal({
             <div className="space-y-1.5">
               <Label className="text-xs">{t('trials.summary')}</Label>
               <Textarea
-                placeholder="สรุปผลโดยรวมของรอบนี้"
+                placeholder={t('trials.summary_placeholder')}
                 className="text-xs h-20"
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
@@ -543,7 +543,7 @@ export function TrialFormModal({
             <div className="space-y-1.5">
               <Label className="text-xs">{t('trials.issues')}</Label>
               <Textarea
-                placeholder="เช่น หนังพองไม่สม่ำเสมอ, น้ำมันกระเด็น"
+                placeholder={t('trials.issues_placeholder')}
                 className="text-xs h-20"
                 value={issues}
                 onChange={(e) => setIssues(e.target.value)}
@@ -552,7 +552,7 @@ export function TrialFormModal({
             <div className="space-y-1.5">
               <Label className="text-xs">{t('trials.next_actions')}</Label>
               <Textarea
-                placeholder="เช่น รอบหน้าจะจิ้มหนังให้ถี่ขึ้นและตากให้นานขึ้น"
+                placeholder={t('trials.next_actions_placeholder')}
                 className="text-xs h-20"
                 value={nextActions}
                 onChange={(e) => setNextActions(e.target.value)}

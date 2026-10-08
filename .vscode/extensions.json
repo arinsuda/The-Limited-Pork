@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "golang.go",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "ms-azuretools.vscode-docker",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+    "lokalise.i18n-ally",
+    "42crunch.vscode-openapi",
+    "editorconfig.editorconfig",
+    "vitest.explorer"
+  ]
+}

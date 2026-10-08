@@ -4,6 +4,7 @@ import {
   UtensilsCrossed,
   FlaskConical,
   GitCompare,
+  ClipboardCheck,
   Database,
   LogOut,
   Globe,
@@ -49,6 +50,12 @@ export function AppLayout() {
       label: t('nav.trials_compare'),
       icon: GitCompare,
       show: hasPermission('trials.read'),
+    },
+    {
+      to: '/checklist',
+      label: t('nav.checklist'),
+      icon: ClipboardCheck,
+      show: true,
     },
     {
       to: '/masterdata',

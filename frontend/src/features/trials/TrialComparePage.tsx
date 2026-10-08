@@ -84,8 +84,38 @@ export function TrialComparePage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-96 w-full" />
+        {/* Header Skeleton */}
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-9 rounded-md" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-3 w-64" />
+          </div>
+        </div>
+
+        {/* Radar Chart Card Skeleton */}
+        <Card className="p-6 border-slate-200 bg-white space-y-4">
+          <Skeleton className="h-5 w-48" />
+          <div className="h-80 flex items-center justify-center">
+            <Skeleton className="h-64 w-64 rounded-full" />
+          </div>
+        </Card>
+
+        {/* Comparison Matrix Table Skeleton */}
+        <Card className="p-6 border-slate-200 bg-white space-y-4">
+          <Skeleton className="h-5 w-40" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <div key={n} className="flex justify-between py-2.5 border-b border-slate-100">
+                <Skeleton className="h-4 w-32" />
+                <div className="flex gap-8">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
     );
   }
@@ -93,7 +123,7 @@ export function TrialComparePage() {
   if (!comparison || comparison.trials.length < 2) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-500">กรุณาเลือกผลการทดสอบอย่างน้อย 2 รายการเพื่อเปรียบเทียบ</p>
+        <p className="text-slate-500">{t('trials.select_min_trials')}</p>
         <Button onClick={() => navigate('/trials')} className="mt-4" variant="outline">
           {t('common.back')}
         </Button>
@@ -140,7 +170,7 @@ export function TrialComparePage() {
       <Card>
         <CardHeader className="p-4 border-b border-slate-100">
           <CardTitle className="text-sm font-bold text-slate-900">
-            กราฟเปรียบเทียบมิติรสชาติและสัมผัส (Comparative Taste Radar)
+            {t('trials.compare_radar_title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
@@ -155,7 +185,7 @@ export function TrialComparePage() {
                   return (
                     <Radar
                       key={tr.id}
-                      name={`รอบ ${tr.trialNo} (${tr.recipe.code} v${tr.versionNo})`}
+                      name={`${t('trials.trial_round', { round: tr.trialNo })} (${tr.recipe.code} v${tr.versionNo})`}
                       dataKey={`trial_${tr.id}`}
                       stroke={color}
                       fill={color}
@@ -175,17 +205,17 @@ export function TrialComparePage() {
       <Card>
         <CardHeader className="p-4 border-b border-slate-100">
           <CardTitle className="text-sm font-bold text-slate-900">
-            ตารางเปรียบเทียบพารามิเตอร์และผลลัพธ์
+            {t('trials.compare_table_title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-48">หัวข้อเปรียบเทียบ</TableHead>
+                <TableHead className="w-48">{t('trials.comparison_topic')}</TableHead>
                 {trials.map((tr, idx) => (
                   <TableHead key={tr.id} style={{ color: TRIAL_COLORS[idx % TRIAL_COLORS.length] }}>
-                    <div className="font-bold text-sm">รอบที่ {tr.trialNo}</div>
+                    <div className="font-bold text-sm">{t('trials.trial_round', { round: tr.trialNo })}</div>
                     <div className="text-[11px] font-normal text-slate-500">
                       {tr.recipe.code} (v{tr.versionNo})
                     </div>
@@ -196,7 +226,7 @@ export function TrialComparePage() {
             <TableBody>
               {/* Date */}
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">วันที่ทดสอบ</TableCell>
+                <TableCell className="font-semibold text-xs text-slate-600">{t('trials.date')}</TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id} className="text-xs text-slate-900">
                     {formatDate(tr.trialDate, i18n.language)}
@@ -206,13 +236,13 @@ export function TrialComparePage() {
 
               {/* Outcome */}
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">ผลการประเมิน</TableCell>
+                <TableCell className="font-semibold text-xs text-slate-600">{t('trials.outcome')}</TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id}>
-                    {tr.outcome === 'PASSED' && <Badge variant="success">ผ่านเกณฑ์</Badge>}
-                    {tr.outcome === 'NEEDS_ADJUSTMENT' && <Badge variant="warning">ต้องปรับปรุง</Badge>}
-                    {tr.outcome === 'FAILED' && <Badge variant="destructive">ไม่ผ่าน</Badge>}
-                    {tr.outcome === 'PENDING' && <Badge variant="outline">รอสรุป</Badge>}
+                    {tr.outcome === 'PASSED' && <Badge variant="success">{t('trials.outcome_passed')}</Badge>}
+                    {tr.outcome === 'NEEDS_ADJUSTMENT' && <Badge variant="warning">{t('trials.outcome_needs_adjustment')}</Badge>}
+                    {tr.outcome === 'FAILED' && <Badge variant="destructive">{t('trials.outcome_failed')}</Badge>}
+                    {tr.outcome === 'PENDING' && <Badge variant="outline">{t('trials.outcome_pending')}</Badge>}
                   </TableCell>
                 ))}
               </TableRow>
@@ -220,7 +250,7 @@ export function TrialComparePage() {
               {/* Overall Taste Score */}
               <TableRow>
                 <TableCell className="font-semibold text-xs text-slate-600">
-                  {t('trials.overall_score_range', { min: 0, max: 5, defaultValue: 'คะแนนภาพรวม (0-5)' })}
+                  {t('trials.overall_score_range', { min: 0, max: 5 })}
                 </TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id} className="text-sm font-bold text-amber-600">
@@ -234,7 +264,7 @@ export function TrialComparePage() {
 
               {/* Yield */}
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">อัตราผลผลิต (% Yield)</TableCell>
+                <TableCell className="font-semibold text-xs text-slate-600">{t('trials.actual_yield')}</TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id} className="text-xs font-bold text-slate-800">
                     {typeof tr.actualYieldPct === 'number' ? `${tr.actualYieldPct}%` : '-'}
@@ -255,7 +285,7 @@ export function TrialComparePage() {
                       <TableCell key={tr.id} className="text-xs font-semibold text-slate-900">
                         {avg && typeof avg.average === 'number'
                           ? isZero
-                            ? `0 (${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})`
+                            ? `0 (${t('trials.score_zero_label')})`
                             : avg.average.toFixed(1)
                           : '-'}
                       </TableCell>
@@ -267,11 +297,11 @@ export function TrialComparePage() {
               {/* Frying Rounds Breakdown */}
               <TableRow className="bg-slate-50/70">
                 <TableCell colSpan={trials.length + 1} className="font-bold text-xs text-slate-800 py-2">
-                  กระบวนการทอด (อุณหภูมิ, เวลา, ทิศทางหมู)
+                  {t('trials.actual_process')}
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">ขั้นตอนการทอด</TableCell>
+                <TableCell className="font-semibold text-xs text-slate-600">{t('trials.process_step_label')}</TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id} className="align-top py-3">
                     <div className="space-y-2">
@@ -281,7 +311,7 @@ export function TrialComparePage() {
                           className="p-2 rounded border border-slate-200 bg-white space-y-1 text-xs"
                         >
                           <div className="font-bold text-slate-900">
-                            {st.title || 'ขั้นตอน'} {st.roundNo && `(รอบ ${st.roundNo})`}
+                            {st.title || t('common.step')} {st.roundNo && `(${t('trials.trial_round', { round: st.roundNo })})`}
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
                             {st.temperatureC && (
@@ -293,7 +323,7 @@ export function TrialComparePage() {
                             {st.durationMinutes && (
                               <span className="flex items-center text-slate-700">
                                 <Clock className="h-3 w-3 mr-0.5" />
-                                {st.durationMinutes} นาที
+                                {st.durationMinutes} {t('common.minutes')}
                               </span>
                             )}
                             {st.orientation && (

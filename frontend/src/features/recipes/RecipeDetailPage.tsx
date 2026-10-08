@@ -21,6 +21,7 @@ import {
   Timer,
   Scale,
   ChefHat,
+  Trash2,
 } from 'lucide-react';
 import {
   LineChart,
@@ -61,6 +62,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { ConfirmModal } from '@/shared/ui/confirm-modal';
 import { formatDateTime } from '@/shared/lib/utils';
 import { RecipeFormModal } from './RecipeFormModal';
 import { useAuthStore } from '@/features/auth/auth-store';
@@ -185,7 +187,7 @@ export function RecipeDetailPage() {
     mutationFn: (versionId: string) =>
       http.post(`/recipes/${id}/versions/${versionId}/restore`),
     onSuccess: () => {
-      toast.success(i18n.language === 'th' ? 'กู้คืนเวอร์ชันสำเร็จ' : 'Version restored');
+      toast.success(t('recipes.version_restored'));
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
     },
     onError: (err: any) => {
@@ -193,11 +195,94 @@ export function RecipeDetailPage() {
     },
   });
 
+  // Delete Recipe State & Mutation
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => http.delete(`/recipes/${id}`),
+    onSuccess: () => {
+      toast.success(t('recipes.recipe_deleted'));
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      navigate('/recipes');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || t('common.error'));
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-48 w-full" />
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-9 rounded-md" />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-16 rounded" />
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <Skeleton className="h-3 w-64" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-24 rounded-md" />
+            <Skeleton className="h-9 w-28 rounded-md" />
+          </div>
+        </div>
+
+        {/* Tabs Bar Skeleton */}
+        <div className="border-b border-slate-200 pb-1">
+          <Skeleton className="h-11 w-80 rounded-xl" />
+        </div>
+
+        {/* 3 Metric Cards Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map((n) => (
+            <Card key={n} className="p-4 flex items-center gap-3.5 border-slate-200 bg-white">
+              <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-6 w-28" />
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Ingredients & Steps Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-1 p-5 space-y-4 border-slate-200 bg-white">
+            <Skeleton className="h-5 w-32" />
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="flex justify-between py-2 border-b border-slate-100">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="lg:col-span-2 p-5 space-y-4 border-slate-200 bg-white">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-8 w-24 rounded-md" />
+            </div>
+            <div className="space-y-3">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="p-4 rounded-xl border border-slate-100 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-16 rounded" />
+                  </div>
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -286,7 +371,7 @@ export function RecipeDetailPage() {
               className="text-xs text-amber-600 border-amber-300 hover:bg-amber-50"
             >
               <FlaskConical className="h-3.5 w-3.5 mr-1" />
-              เปลี่ยนเป็น {t('recipes.status_testing')}
+              {t('recipes.action_mark_testing')}
             </Button>
           )}
 
@@ -299,7 +384,20 @@ export function RecipeDetailPage() {
               className="text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50"
             >
               <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-              {t('recipes.status_approved')}
+              {t('recipes.action_approve')}
+            </Button>
+          )}
+
+          {/* Delete Recipe Button */}
+          {hasPermission('recipes.write') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1 text-red-500" />
+              {t('recipes.action_delete')}
             </Button>
           )}
 
@@ -359,7 +457,7 @@ export function RecipeDetailPage() {
                       {yieldPct !== null ? `${yieldPct}%` : '-'}
                     </span>
                     {yieldPct !== null && (
-                      <span className="text-[11px] text-amber-700 font-medium">เป้าหมาย</span>
+                      <span className="text-[11px] text-amber-700 font-medium">{t('recipes.target_metric')}</span>
                     )}
                   </div>
                 </div>
@@ -441,13 +539,13 @@ export function RecipeDetailPage() {
                       <TableRow className="border-b border-slate-200/80">
                         <TableHead className="w-14 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">#</TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                          {i18n.language === 'th' ? 'วัตถุดิบ' : 'Ingredient'}
+                          {t('recipes.ingredients')}
                         </TableHead>
                         <TableHead className="w-40 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                          {i18n.language === 'th' ? 'สัดส่วน / ปริมาณ' : 'Quantity'}
+                          {t('recipes.input_quantity')}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                          {i18n.language === 'th' ? 'การเตรียม / หมายเหตุ' : 'Prep Notes'}
+                          {t('masterdata.prep_notes')}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -511,11 +609,11 @@ export function RecipeDetailPage() {
                 {totalDurationMinutes > 0 && (
                   <Badge variant="outline" className="bg-white border-slate-200 text-slate-700 shadow-2xs font-semibold text-xs px-2.5 py-1 flex items-center gap-1.5">
                     <Timer className="h-3.5 w-3.5 text-orange-600" />
-                    <span>{t('recipes.total_duration')}: {totalDurationMinutes} {i18n.language === 'th' ? 'นาที' : 'min'}</span>
+                    <span>{t('recipes.total_duration')}: {totalDurationMinutes} {t('common.minutes')}</span>
                   </Badge>
                 )}
                 <Badge variant="secondary" className="bg-orange-100 text-orange-800 border border-orange-200/80 font-semibold text-xs px-2.5 py-1">
-                  {steps.length} {i18n.language === 'th' ? 'ขั้นตอน' : 'Steps'}
+                  {t('recipes.steps_count', { count: steps.length })}
                 </Badge>
               </div>
             </CardHeader>
@@ -581,7 +679,7 @@ export function RecipeDetailPage() {
                             {st.durationMinutes !== null && (
                               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200/80 shadow-2xs">
                                 <Clock className="h-3.5 w-3.5 text-sky-500 shrink-0" />
-                                <span>{st.durationMinutes} {i18n.language === 'th' ? 'นาที' : 'min'}</span>
+                                <span>{st.durationMinutes} {t('common.minutes')}</span>
                               </div>
                             )}
                             {st.orientation && (
@@ -632,11 +730,11 @@ export function RecipeDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-20">เวอร์ชัน</TableHead>
-                    <TableHead>บันทึกการเปลี่ยนแปลง (Change Note)</TableHead>
-                    <TableHead>ขั้นตอน / วัตถุดิบ</TableHead>
-                    <TableHead>สร้างเมื่อ</TableHead>
-                    <TableHead className="w-24 text-right">การจัดการ</TableHead>
+                    <TableHead className="w-24">{t('common.version')}</TableHead>
+                    <TableHead>{t('recipes.change_note')}</TableHead>
+                    <TableHead>{t('recipes.steps_and_ingredients')}</TableHead>
+                    <TableHead>{t('common.created_at')}</TableHead>
+                    <TableHead className="w-28 text-right">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -644,30 +742,44 @@ export function RecipeDetailPage() {
                     const isCurrent = v.versionNo === current?.versionNo;
                     return (
                       <TableRow key={v.id} className={isCurrent ? 'bg-orange-50/40' : ''}>
-                        <TableCell className="font-bold text-xs text-slate-900">
-                          v{v.versionNo} {isCurrent && <Badge variant="default" className="ml-1 text-[10px] scale-90">ปัจจุบัน</Badge>}
+                        <TableCell className="font-bold text-sm text-slate-900 font-mono">
+                          v{v.versionNo}
                         </TableCell>
                         <TableCell className="text-xs text-slate-700">
                           {v.changeNote || '-'}
                         </TableCell>
                         <TableCell className="text-xs text-slate-500">
-                          {v.stepCount} ขั้นตอน • {v.ingredientCount} วัตถุดิบ
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Badge variant="outline" className="text-[11px] font-medium bg-slate-50 border-slate-200">
+                              {t('recipes.steps_count', { count: v.stepCount ?? 0 })}
+                            </Badge>
+                            <Badge variant="outline" className="text-[11px] font-medium bg-slate-50 border-slate-200">
+                              {t('recipes.ingredients_count', { count: v.ingredientCount ?? 0 })}
+                            </Badge>
+                          </div>
                         </TableCell>
-                        <TableCell className="text-xs text-slate-400">
+                        <TableCell className="text-xs text-slate-400 whitespace-nowrap">
                           {formatDateTime(v.createdAt, i18n.language)}
                         </TableCell>
                         <TableCell className="text-right">
-                          {!isCurrent && hasPermission('recipes.write') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => restoreMutation.mutate(v.id)}
-                              disabled={restoreMutation.isPending}
-                              className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                            >
-                              <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                              {t('recipes.restore_version')}
-                            </Button>
+                          {isCurrent ? (
+                            <Badge variant="success" className="text-xs font-semibold whitespace-nowrap inline-flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              {t('recipes.current_active')}
+                            </Badge>
+                          ) : (
+                            hasPermission('recipes.write') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => restoreMutation.mutate(v.id)}
+                                disabled={restoreMutation.isPending}
+                                className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                                {t('recipes.action_restore')}
+                              </Button>
+                            )
                           )}
                         </TableCell>
                       </TableRow>
@@ -685,13 +797,13 @@ export function RecipeDetailPage() {
             <CardHeader className="p-4 border-b border-slate-100">
               <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-orange-600" />
-                {t('recipes.score_trend')} (คะแนนการทดสอบแต่ละรอบ)
+                {t('recipes.score_trend')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               {(scoreTrend ?? []).length === 0 ? (
                 <div className="py-12 text-center text-xs text-slate-400">
-                  ยังไม่มีผลการทดสอบสำหรับสูตรนี้ ไปที่หน้า &quot;ผลการทดสอบ (R&D)&quot; เพื่อเริ่มบันทึกผล
+                  {t('recipes.no_trend_data')}
                 </div>
               ) : (
                 <div className="h-72 w-full">
@@ -700,7 +812,7 @@ export function RecipeDetailPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                       <XAxis
                         dataKey="trialNo"
-                        tickFormatter={(v) => `รอบ ${v}`}
+                        tickFormatter={(v) => t('trials.trial_round', { round: v })}
                         stroke="#94a3b8"
                         fontSize={12}
                       />
@@ -708,9 +820,9 @@ export function RecipeDetailPage() {
                       <Tooltip
                         formatter={(val: any) => [
                           val != null && !isNaN(Number(val)) ? `${Number(val).toFixed(2)} / 5` : '-',
-                          'คะแนนเฉลี่ย',
+                          t('recipes.trend_avg_score'),
                         ]}
-                        labelFormatter={(label) => `ผลทดสอบรอบที่ ${label}`}
+                        labelFormatter={(label) => t('recipes.trend_round_label', { round: label })}
                       />
                       <Line
                         type="monotone"
@@ -735,6 +847,19 @@ export function RecipeDetailPage() {
         onOpenChange={setIsVersionModalOpen}
         recipeId={recipe.id}
         existingRecipeName={recipe.name}
+      />
+
+      {/* Reusable Delete Confirmation Modal */}
+      <ConfirmModal
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title={t('recipes.delete_confirm_title')}
+        description={t('recipes.delete_confirm_desc', { name: recipe.name, code: recipe.code })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
       />
     </div>
   );

@@ -195,11 +195,29 @@ export function TrialListPage() {
       {/* Trials Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[1, 2, 3].map((n) => (
-            <Card key={n} className="p-4 space-y-3">
-              <Skeleton className="h-5 w-1/3" />
-              <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-16 w-full" />
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <Card key={n} className="overflow-hidden border border-slate-200 bg-white space-y-0">
+              <div className="p-4 pb-2 flex items-center justify-between border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <CardContent className="p-4 space-y-3">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3 w-28" />
+                  <Skeleton className="h-5 w-44" />
+                </div>
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <Skeleton className="h-8 rounded" />
+                  <Skeleton className="h-8 rounded" />
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-8 w-20 rounded-md" />
+                </div>
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -208,9 +226,9 @@ export function TrialListPage() {
           <div className="h-12 w-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-3">
             <FlaskConical className="h-6 w-6" />
           </div>
-          <h3 className="text-base font-semibold text-slate-900">{t('common.no_data')}</h3>
+          <h3 className="text-base font-semibold text-slate-900">{t('trials.empty_title')}</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            ยังไม่มีบันทึกผลการทดสอบ กดปุ่มเพื่อบันทึกผลการทอดรอบแรก
+            {t('trials.empty_subtitle')}
           </p>
           {hasPermission('trials.write') && (
             <Button onClick={() => setIsModalOpen(true)} className="mt-4" size="sm">
@@ -239,10 +257,10 @@ export function TrialListPage() {
                         checked={isChecked}
                         onChange={() => handleToggleSelectTrial(trial.id)}
                         className="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                        title="เลือกสำหรับเปรียบเทียบ"
+                        title={t('trials.select_for_compare')}
                       />
                       <span className="font-bold text-sm text-slate-900 flex items-center gap-1">
-                        {t('trials.trial_no')} {trial.trialNo}
+                        {t('trials.trial_round', { round: trial.trialNo })}
                       </span>
                     </div>
 

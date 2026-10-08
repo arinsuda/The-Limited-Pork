@@ -46,6 +46,7 @@ import {
   DialogFooter,
 } from '@/shared/ui/dialog';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { useConfirm } from '@/shared/ui/confirm-modal';
 import { formatDate, cn } from '@/shared/lib/utils';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { toast } from 'sonner';
@@ -145,6 +146,7 @@ export function TrialDetailPage() {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission } = useAuthStore();
+  const { confirm } = useConfirm();
 
   const [isEvaluationModalOpen, setIsEvaluationModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -213,7 +215,7 @@ export function TrialDetailPage() {
       });
     },
     onSuccess: () => {
-      toast.success(i18n.language === 'th' ? 'บันทึกการประเมินสำเร็จ' : 'Evaluation added');
+      toast.success(t('trials.evaluation_added'));
       queryClient.invalidateQueries({ queryKey: ['trials', 'detail', id] });
       setIsEvaluationModalOpen(false);
       setTasterName('');
@@ -247,7 +249,7 @@ export function TrialDetailPage() {
 
     try {
       await http.post('/attachments', formData);
-      toast.success(i18n.language === 'th' ? 'อัปโหลดรูปภาพสำเร็จ' : 'Photo uploaded');
+      toast.success(t('common.success'));
       queryClient.invalidateQueries({ queryKey: ['trials', 'detail', id] });
     } catch (err: any) {
       toast.error(err.message || 'Upload failed');
@@ -262,7 +264,7 @@ export function TrialDetailPage() {
     mutationFn: (attId: string) =>
       http.patch(`/attachments/${attId}`, { isCover: true }),
     onSuccess: () => {
-      toast.success(i18n.language === 'th' ? 'ตั้งเป็นภาพหน้าปกแล้ว' : 'Cover updated');
+      toast.success(t('trials.photo_cover_set'));
       queryClient.invalidateQueries({ queryKey: ['trials', 'detail', id] });
     },
   });
@@ -276,11 +278,98 @@ export function TrialDetailPage() {
     },
   });
 
+  const handleDeleteEvaluation = async (evaluationId: string) => {
+    const isConfirmed = await confirm({
+      title: t('trials.delete_eval_confirm_title'),
+      description: t('trials.delete_eval_confirm_desc'),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
+    deleteEvalMutation.mutate(evaluationId);
+  };
+
+  const handleDeleteAttachment = async (attId: string) => {
+    const isConfirmed = await confirm({
+      title: t('trials.delete_att_confirm_title'),
+      description: t('trials.delete_att_confirm_desc'),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
+    deleteAttMutation.mutate(attId);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-64 w-full" />
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-9 rounded-md" />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-5 w-40 rounded" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-24 rounded-md" />
+            <Skeleton className="h-8 w-24 rounded-md" />
+            <Skeleton className="h-8 w-24 rounded-md" />
+          </div>
+        </div>
+
+        {/* 4 Metrics Cards Skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((n) => (
+            <Card key={n} className="p-4 flex items-center gap-3 border-slate-200 bg-white">
+              <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+              <div className="space-y-1.5 flex-1">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Tabs Bar Skeleton */}
+        <Skeleton className="h-10 w-96 rounded-xl" />
+
+        {/* Detail Content Grid Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-2 p-5 space-y-4 border-slate-200 bg-white">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-8 w-28 rounded-md" />
+            </div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="p-4 rounded-xl border border-slate-100 flex items-start gap-3">
+                  <Skeleton className="h-6 w-6 rounded-full shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="lg:col-span-1 p-5 space-y-4 border-slate-200 bg-white">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+            <div className="space-y-2 pt-2">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -434,7 +523,7 @@ export function TrialDetailPage() {
             </div>
             <div>
               <span className="text-[11px] text-slate-500 font-medium block">
-                อุณหภูมิ / ความชื้น
+                {t('trials.temp_and_humidity')}
               </span>
               <span className="text-sm font-bold text-slate-800">
                 {trial.ambientTempC ? `${trial.ambientTempC}°C` : '-'} /{' '}
@@ -473,7 +562,7 @@ export function TrialDetailPage() {
             <CardTitle className="text-xs font-bold text-slate-900">{t('trials.summary')}</CardTitle>
           </CardHeader>
           <CardContent className="p-4 text-xs text-slate-700 min-h-[5rem]">
-            {trial.summary || 'ไม่มีบันทึกสรุป'}
+            {trial.summary || t('trials.no_summary')}
           </CardContent>
         </Card>
 
@@ -485,7 +574,7 @@ export function TrialDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 text-xs text-amber-950 min-h-[5rem]">
-            {trial.issues || 'ไม่พบปัญหาในการทำรอบนี้'}
+            {trial.issues || t('trials.no_issues')}
           </CardContent>
         </Card>
 
@@ -494,7 +583,7 @@ export function TrialDetailPage() {
             <CardTitle className="text-xs font-bold text-blue-900">{t('trials.next_actions')}</CardTitle>
           </CardHeader>
           <CardContent className="p-4 text-xs text-blue-950 min-h-[5rem]">
-            {trial.nextActions || 'ไม่มีบันทึกสำหรับรอบถัดไป'}
+            {trial.nextActions || t('trials.no_next_actions')}
           </CardContent>
         </Card>
       </div>
@@ -515,7 +604,7 @@ export function TrialDetailPage() {
           <CardContent className="p-4">
             {radarData.length === 0 ? (
               <div className="py-16 text-center text-xs text-slate-400">
-                ยังไม่มีการประเมินรสชาติ กดปุ่ม &quot;เพิ่มการชิมและให้คะแนน&quot; ด้านล่าง
+                {t('trials.no_evaluations_yet')}
               </div>
             ) : (
               <div className="h-72 w-full">
@@ -525,7 +614,7 @@ export function TrialDetailPage() {
                     <PolarAngleAxis dataKey="attribute" tick={{ fill: '#334155', fontSize: 11 }} />
                     <PolarRadiusAxis domain={[minPossibleScore, maxPossibleScore]} stroke="#cbd5e1" />
                     <Radar
-                      name="คะแนนเฉลี่ย"
+                      name={t('trials.average_score')}
                       dataKey="score"
                       stroke="#ea580c"
                       fill="#f97316"
@@ -534,9 +623,9 @@ export function TrialDetailPage() {
                     <RechartsTooltip
                       formatter={(val: any) => [
                         Number(val) === 0
-                          ? `0 / ${maxPossibleScore} (${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})`
+                          ? `0 / ${maxPossibleScore} (${t('trials.score_zero_label')})`
                           : `${Number(val).toFixed(2)} / ${maxPossibleScore}`,
-                        'คะแนนเฉลี่ย',
+                        t('trials.average_score'),
                       ]}
                     />
                   </RadarChart>
@@ -564,11 +653,11 @@ export function TrialDetailPage() {
                     <div className="flex flex-wrap items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-bold text-slate-900">
-                          {st.title || st.stepType.nameTh}
+                          {st.title || (i18n.language === 'th' ? st.stepType.nameTh : st.stepType.nameEn)}
                         </span>
                         {st.roundNo && (
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-800">
-                            {i18n.language === 'th' ? `ทอดรอบที่ ${st.roundNo}` : `Round ${st.roundNo}`}
+                            {t('trials.trial_round', { round: st.roundNo })}
                           </span>
                         )}
                       </div>
@@ -583,7 +672,7 @@ export function TrialDetailPage() {
                         {st.durationMinutes !== null && (
                           <Badge variant="outline" className="text-xs text-slate-700">
                             <Clock className="h-3 w-3 mr-0.5" />
-                            {st.durationMinutes} นาที
+                            {st.durationMinutes} {t('common.minutes')}
                           </Badge>
                         )}
                         {st.orientation && (
@@ -622,7 +711,7 @@ export function TrialDetailPage() {
         <CardContent className="p-4">
           {evaluations.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400">
-              ยังไม่มีการประเมินจากผู้ชิม
+              {t('trials.no_tasters_yet')}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -659,7 +748,7 @@ export function TrialDetailPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => deleteEvalMutation.mutate(ev.id)}
+                          onClick={() => handleDeleteEvaluation(ev.id)}
                           className="h-7 w-7 text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -685,12 +774,12 @@ export function TrialDetailPage() {
                           className="flex items-center justify-between text-xs px-2 py-1 rounded bg-slate-50 border border-slate-100"
                         >
                           <span className="text-slate-600 text-[11px] truncate">
-                            {attr ? (i18n.language === 'th' ? attr.nameTh : attr.nameEn) : 'มิติ'}
+                            {attr ? (i18n.language === 'th' ? attr.nameTh : attr.nameEn) : t('trials.dimension')}
                           </span>
                           <span className={cn('font-bold ml-1', isZero ? 'text-slate-500' : 'text-slate-900')}>
                             {typeof sc.score === 'number'
                               ? isZero
-                                ? `0 (${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})`
+                                ? `0 (${t('trials.score_zero_label')})`
                                 : sc.score.toFixed(1)
                               : (sc.score ?? '-')}
                           </span>
@@ -733,7 +822,7 @@ export function TrialDetailPage() {
         <CardContent className="p-4">
           {attachments.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400">
-              ยังไม่มีรูปภาพผลงานหมูกรอบในรอบนี้ กดปุ่มอัปโหลดรูปภาพเพื่อบันทึก
+              {t('trials.no_photos_yet')}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -746,7 +835,7 @@ export function TrialDetailPage() {
 
                   {att.isCover && (
                     <div className="absolute top-2 left-2 bg-orange-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
-                      ภาพหน้าปก
+                      {t('trials.cover_photo')}
                     </div>
                   )}
 
@@ -765,7 +854,7 @@ export function TrialDetailPage() {
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => deleteAttMutation.mutate(att.id)}
+                        onClick={() => handleDeleteAttachment(att.id)}
                         className="h-7 w-7"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -794,7 +883,7 @@ export function TrialDetailPage() {
               <Input
                 id="taster-name"
                 required
-                placeholder="เช่น เชฟต้น, ผู้จัดการร้าน, ลูกค้าทดลอง"
+                placeholder={t('trials.taster_name_placeholder')}
                 value={tasterName}
                 onChange={(e) => setTasterName(e.target.value)}
               />
@@ -808,12 +897,11 @@ export function TrialDetailPage() {
                     ? t('trials.scores_range', {
                         min: Math.min(...attributes.map((a) => a.minScore ?? 0)),
                         max: Math.max(...attributes.map((a) => a.maxScore ?? 5)),
-                        defaultValue: `คะแนนแต่ละด้าน (${Math.min(...attributes.map((a) => a.minScore ?? 0))} ถึง ${Math.max(...attributes.map((a) => a.maxScore ?? 5))})`,
                       })
                     : t('trials.scores')}
                 </Label>
                 <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                  {t('trials.score_zero_hint', { defaultValue: '0 = ไม่มีเลย' })}
+                  {t('trials.score_zero_hint')}
                 </span>
               </div>
               <div className="space-y-3">
@@ -849,7 +937,7 @@ export function TrialDetailPage() {
                           )}
                         >
                           {isZero
-                            ? `0 / ${max} (${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})`
+                            ? `0 / ${max} (${t('trials.score_zero_label')})`
                             : `${currentScore.toFixed(1)} / ${max}`}
                         </span>
                       </div>
@@ -865,10 +953,10 @@ export function TrialDetailPage() {
                       />
                       <div className="flex justify-between text-[10px] text-slate-600 px-0.5 font-medium">
                         <span>
-                          {min} {min === 0 ? `(${t('trials.score_zero_label', { defaultValue: 'ไม่มีเลย' })})` : ''}
+                          {min} {min === 0 ? `(${t('trials.score_zero_label')})` : ''}
                         </span>
                         <span>
-                          {max} ({t('trials.score_max_label', { defaultValue: 'มากที่สุด' })})
+                          {max} ({t('trials.score_max_label')})
                         </span>
                       </div>
                     </div>
@@ -881,7 +969,7 @@ export function TrialDetailPage() {
               <Label htmlFor="overall-comment">{t('trials.taster_comment')}</Label>
               <Textarea
                 id="overall-comment"
-                placeholder="ความคิดเห็นเพิ่มเติม เช่น หนังกรอบมากแต่เนื้อติดเค็มไปนิด"
+                placeholder={t('trials.taster_comment_placeholder')}
                 value={overallComment}
                 onChange={(e) => setOverallComment(e.target.value)}
               />

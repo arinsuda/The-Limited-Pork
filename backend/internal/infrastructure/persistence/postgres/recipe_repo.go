@@ -388,12 +388,15 @@ func (r *RecipeRepo) ListVersions(recipeID uuid.UUID) ([]recipe.Version, error) 
 	q := GetQuerier(ctx, r.pool)
 
 	query := `
-		SELECT id, recipe_id, version_no, change_note, input_quantity, input_unit_id,
-		       expected_output_quantity, expected_output_unit_id, expected_yield_pct,
-		       notes, created_by, created_at
-		FROM recipe_versions
-		WHERE recipe_id = $1
-		ORDER BY version_no DESC
+		SELECT rv.id, rv.recipe_id, rv.version_no, rv.change_note, rv.input_quantity, rv.input_unit_id,
+		       rv.expected_output_quantity, rv.expected_output_unit_id, rv.expected_yield_pct,
+		       rv.notes, rv.created_by, rv.created_at,
+		       (SELECT COUNT(*) FROM recipe_ingredients ri WHERE ri.version_id = rv.id) AS ingredient_count,
+		       (SELECT COUNT(*) FROM process_steps ps WHERE ps.version_id = rv.id) AS step_count,
+		       (SELECT COUNT(*) FROM trials t WHERE t.recipe_version_id = rv.id) AS trial_count
+		FROM recipe_versions rv
+		WHERE rv.recipe_id = $1
+		ORDER BY rv.version_no DESC
 	`
 	rows, err := q.Query(ctx, query, recipeID)
 	if err != nil {
@@ -408,6 +411,7 @@ func (r *RecipeRepo) ListVersions(recipeID uuid.UUID) ([]recipe.Version, error) 
 			&v.ID, &v.RecipeID, &v.VersionNo, &v.ChangeNote, &v.InputQuantity, &v.InputUnitID,
 			&v.ExpectedOutputQuantity, &v.ExpectedOutputUnitID, &v.ExpectedYieldPct,
 			&v.Notes, &v.CreatedBy, &v.CreatedAt,
+			&v.IngredientCount, &v.StepCount, &v.TrialCount,
 		); err != nil {
 			return nil, err
 		}
@@ -450,9 +454,15 @@ func (r *RecipeRepo) GetVersionByID(id uuid.UUID) (*recipe.Version, error) {
 
 	// Fetch ingredients
 	v.Ingredients, _ = r.getIngredients(ctx, q, v.ID)
+	v.IngredientCount = len(v.Ingredients)
 
 	// Fetch steps
 	v.Steps, _ = r.getSteps(ctx, q, v.ID)
+	v.StepCount = len(v.Steps)
+
+	var trialCount int
+	_ = q.QueryRow(ctx, `SELECT COUNT(*) FROM trials WHERE recipe_version_id = $1`, v.ID).Scan(&trialCount)
+	v.TrialCount = trialCount
 
 	return &v, nil
 }

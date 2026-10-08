@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import {
@@ -11,6 +11,7 @@ import {
   Star,
   Layers,
   FlaskConical,
+  Trash2,
 } from 'lucide-react';
 import { http } from '@/shared/lib/http/client';
 import { Button } from '@/shared/ui/button';
@@ -18,8 +19,10 @@ import { Input } from '@/shared/ui/input';
 import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { ConfirmModal } from '@/shared/ui/confirm-modal';
 import { RecipeFormModal } from './RecipeFormModal';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { toast } from 'sonner';
 
 interface RecipeTag {
   id: string;
@@ -56,12 +59,26 @@ interface RecipeListResponse {
 export function RecipeListPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { hasPermission } = useAuthStore();
 
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedTagId, setSelectedTagId] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [recipeToDelete, setRecipeToDelete] = useState<RecipeSummary | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: (recipeId: string) => http.delete(`/recipes/${recipeId}`),
+    onSuccess: () => {
+      toast.success(t('recipes.recipe_deleted'));
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      setRecipeToDelete(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || t('common.error'));
+    },
+  });
 
   // Fetch Recipe Tags master data
   const { data: recipeTags = [] } = useQuery<RecipeTag[]>({
@@ -157,7 +174,7 @@ export function RecipeListPage() {
       {recipeTags.length > 0 && (
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
           <span className="text-slate-400 font-medium whitespace-nowrap mr-1">
-            {i18n.language === 'th' ? 'หมวด / แท็ก:' : 'Tags:'}
+            {t('recipes.filter_tags')}
           </span>
           <button
             onClick={() => setSelectedTagId('')}
@@ -167,7 +184,7 @@ export function RecipeListPage() {
                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
             }`}
           >
-            {i18n.language === 'th' ? 'ทั้งหมด' : 'All'}
+            {t('common.all')}
           </button>
           {recipeTags.map((tag) => (
             <button
@@ -188,12 +205,31 @@ export function RecipeListPage() {
       {/* Recipe Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[1, 2, 3].map((n) => (
-            <Card key={n} className="overflow-hidden">
-              <Skeleton className="h-40 w-full" />
-              <CardContent className="p-4 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <Card key={n} className="overflow-hidden border border-slate-200 bg-white space-y-0">
+              <div className="h-36 bg-slate-100 relative p-2.5 flex justify-between">
+                <Skeleton className="h-5 w-16 rounded bg-slate-200" />
+                <Skeleton className="h-5 w-20 rounded-full bg-slate-200" />
+              </div>
+              <CardHeader className="p-4 pb-2 space-y-2">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-4/5" />
+              </CardHeader>
+              <div className="px-4 pb-2 flex gap-1">
+                <Skeleton className="h-4 w-16 rounded-full" />
+                <Skeleton className="h-4 w-20 rounded-full" />
+              </div>
+              <CardContent className="px-4 pb-4 pt-1 space-y-3">
+                <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-lg bg-slate-50 border border-slate-100">
+                  <Skeleton className="h-7 rounded" />
+                  <Skeleton className="h-7 rounded" />
+                  <Skeleton className="h-7 rounded" />
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                  <Skeleton className="h-8 w-24 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -205,9 +241,7 @@ export function RecipeListPage() {
           </div>
           <h3 className="text-base font-semibold text-slate-900">{t('common.no_data')}</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            {selectedTagId
-              ? (i18n.language === 'th' ? 'ไม่พบสูตรในหมวดนี้' : 'No recipes found for this tag')
-              : 'ยังไม่มีสูตรในระบบ เริ่มต้นสร้างสูตรแรกเพื่อจดบันทึกและนำไปทดสอบ'}
+            {selectedTagId ? t('recipes.empty_filtered') : t('recipes.empty_subtitle')}
           </p>
           {hasPermission('recipes.write') && (
             <Button onClick={() => setIsModalOpen(true)} className="mt-4" size="sm">
@@ -256,7 +290,7 @@ export function RecipeListPage() {
                     {rec.name}
                   </CardTitle>
                   <p className="text-xs text-slate-500 line-clamp-2 min-h-[2.5rem]">
-                    {rec.description || 'ไม่มีคำอธิบายเพิ่มเติม'}
+                    {rec.description || t('recipes.no_description')}
                   </p>
                 </CardHeader>
 
@@ -278,7 +312,7 @@ export function RecipeListPage() {
                 <CardContent className="px-4 pb-4 pt-1 space-y-3">
                   <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-lg bg-slate-50 border border-slate-100 text-center">
                     <div>
-                      <span className="text-[10px] text-slate-400 block">{t('recipes.version')}</span>
+                      <span className="text-[10px] text-slate-400 block">{t('common.version')}</span>
                       <span className="text-xs font-bold text-slate-800 flex items-center justify-center gap-1 mt-0.5">
                         <Layers className="h-3 w-3 text-slate-400" />v{rec.currentVersionNo}
                       </span>
@@ -302,16 +336,30 @@ export function RecipeListPage() {
               </div>
 
               {/* Card Footer Button */}
-              <div className="p-4 pt-0">
+              <div className="p-4 pt-0 flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate(`/recipes/${rec.id}`)}
-                  className="w-full text-xs font-medium justify-between group-hover:border-orange-500 group-hover:text-orange-600"
+                  className="flex-1 text-xs font-medium justify-between group-hover:border-orange-500 group-hover:text-orange-600"
                 >
                   <span>{t('common.view')}</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
+                {hasPermission('recipes.write') && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRecipeToDelete(rec);
+                    }}
+                    className="h-8 w-8 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 shrink-0"
+                    title={t('recipes.action_delete')}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
             </Card>
           ))}
@@ -320,6 +368,30 @@ export function RecipeListPage() {
 
       {/* Create Modal */}
       <RecipeFormModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+
+      {/* Reusable Delete Confirmation Modal */}
+      <ConfirmModal
+        open={Boolean(recipeToDelete)}
+        onOpenChange={(open) => !open && setRecipeToDelete(null)}
+        title={t('recipes.delete_confirm_title')}
+        description={
+          recipeToDelete
+            ? t('recipes.delete_confirm_desc', {
+                name: recipeToDelete.name,
+                code: recipeToDelete.code,
+              })
+            : undefined
+        }
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (recipeToDelete) {
+            deleteMutation.mutate(recipeToDelete.id);
+          }
+        }}
+      />
     </div>
   );
 }

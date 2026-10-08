@@ -160,8 +160,8 @@ export function RecipeFormModal({
       if (boil) {
         initial.push({
           stepTypeId: boil.id,
-          title: 'ต้มหมูสามชั้น',
-          instruction: 'ต้มในน้ำเดือดให้หนังเริ่มสุกนิ่ม',
+          title: t('recipes.preset_boil_title'),
+          instruction: t('recipes.preset_boil_desc'),
           temperatureC: 100,
           durationMinutes: 20,
           orientationId: skinDown ? skinDown.id : '',
@@ -171,8 +171,8 @@ export function RecipeFormModal({
       if (dry) {
         initial.push({
           stepTypeId: dry.id,
-          title: 'พักผึ่งหนังให้แห้งสนิท',
-          instruction: 'ทาเกลือและน้ำส้มสายชูบนหนังหมู แล้วผึ่งแดดหรือแช่ตู้เย็น',
+          title: t('recipes.preset_dry_title'),
+          instruction: t('recipes.preset_dry_desc'),
           temperatureC: '',
           durationMinutes: 120,
           orientationId: skinUp ? skinUp.id : '',
@@ -183,8 +183,8 @@ export function RecipeFormModal({
         // Fry Round 1
         initial.push({
           stepTypeId: fry.id,
-          title: 'ทอดรอบที่ 1 (ทำให้เนื้อสุกทั่ว)',
-          instruction: 'ทอดไฟกลาง หนังคว่ำลงในน้ำมัน',
+          title: t('recipes.preset_fry1_title'),
+          instruction: t('recipes.preset_fry1_desc'),
           temperatureC: 160,
           durationMinutes: 15,
           orientationId: skinDown ? skinDown.id : '',
@@ -193,8 +193,8 @@ export function RecipeFormModal({
         // Fry Round 2
         initial.push({
           stepTypeId: fry.id,
-          title: 'ทอดรอบที่ 2 (เร่งไฟให้หนังพูกรอบ)',
-          instruction: 'เร่งไฟแรง หนังหงายขึ้นหรือตะแคงให้หนังฟูระเบิดกรอบ',
+          title: t('recipes.preset_fry2_title'),
+          instruction: t('recipes.preset_fry2_desc'),
           temperatureC: 200,
           durationMinutes: 5,
           orientationId: skinUp ? skinUp.id : '',
@@ -203,7 +203,7 @@ export function RecipeFormModal({
       }
       setRecipeSteps(initial);
     }
-  }, [open, stepTypes, lookups, recipeSteps.length]);
+  }, [open, stepTypes, lookups, recipeSteps.length, t]);
 
   const addIngredientRow = () => {
     const firstIng = ingredients[0];
@@ -256,7 +256,7 @@ export function RecipeFormModal({
         round++;
       }
     }
-    return i18n.language === 'th' ? `(รอบที่ ${round})` : `(Round ${round})`;
+    return t('recipes.round_number', { round });
   };
 
   // Submit mutation
@@ -306,13 +306,7 @@ export function RecipeFormModal({
     },
     onSuccess: () => {
       toast.success(
-        isCreatingVersion
-          ? i18n.language === 'th'
-            ? 'สร้างเวอร์ชันใหม่สำเร็จ'
-            : 'New version created'
-          : i18n.language === 'th'
-            ? 'สร้างสูตรสำเร็จ'
-            : 'Recipe created successfully',
+        isCreatingVersion ? t('recipes.version_created') : t('recipes.recipe_created'),
       );
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
       onOpenChange(false);
@@ -345,7 +339,7 @@ export function RecipeFormModal({
                 <Input
                   id="rec-name"
                   required
-                  placeholder="เช่น สูตรหนังฟูกรอบไม่อมน้ำมัน (Signature)"
+                  placeholder={t('recipes.name_placeholder')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -353,11 +347,11 @@ export function RecipeFormModal({
 
               <div className="space-y-1.5">
                 <Label htmlFor="rec-code">
-                  {t('recipes.code')} <span className="text-xs text-slate-400">(เว้นว่างเพื่อสร้างอัตโนมัติ)</span>
+                  {t('recipes.code')} <span className="text-xs text-slate-400">{t('recipes.auto_code_hint')}</span>
                 </Label>
                 <Input
                   id="rec-code"
-                  placeholder="เช่น RCP-0001"
+                  placeholder="RCP-0001"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                 />
@@ -367,14 +361,14 @@ export function RecipeFormModal({
                 <Label htmlFor="rec-desc">{t('recipes.description')}</Label>
                 <Input
                   id="rec-desc"
-                  placeholder="คำอธิบายจุดเด่นของสูตร"
+                  placeholder={t('recipes.desc_placeholder')}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <Label>{i18n.language === 'th' ? 'แท็ก / หมวดหมู่สูตร' : 'Recipe Tags'}</Label>
+                <Label>{t('recipes.recipe_tags')}</Label>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {recipeTags.map((tag) => {
                     const isSelected = selectedTagIds.includes(tag.id);
@@ -408,7 +402,7 @@ export function RecipeFormModal({
               <Label htmlFor="change-note">{t('recipes.change_note')}</Label>
               <Input
                 id="change-note"
-                placeholder="เช่น ปรับอุณหภูมิทอดรอบ 2 จาก 190°C เป็น 200°C เพื่อให้หนังฟูขึ้น"
+                placeholder={t('recipes.change_note_placeholder')}
                 value={changeNote}
                 onChange={(e) => setChangeNote(e.target.value)}
               />
@@ -427,7 +421,7 @@ export function RecipeFormModal({
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">หน่วยเริ่มต้น</Label>
+              <Label className="text-xs">{t('recipes.initial_unit')}</Label>
               <select
                 className="w-full h-9 rounded-md border border-slate-300 bg-white px-2 text-xs"
                 value={inputUnitId}
@@ -451,7 +445,7 @@ export function RecipeFormModal({
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">หน่วยเป้าหมาย</Label>
+              <Label className="text-xs">{t('recipes.target_unit')}</Label>
               <select
                 className="w-full h-9 rounded-md border border-slate-300 bg-white px-2 text-xs"
                 value={expectedOutputUnitId}
@@ -477,7 +471,7 @@ export function RecipeFormModal({
             </div>
 
             {recipeIngredients.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">ยังไม่มีวัตถุดิบเสริม (สามารถเพิ่มเกลือ, น้ำส้มสายชู ฯลฯ ได้)</p>
+              <p className="text-xs text-slate-400 italic">{t('recipes.no_extra_ingredients_hint')}</p>
             ) : (
               <div className="space-y-2">
                 {recipeIngredients.map((row, idx) => (
@@ -508,7 +502,7 @@ export function RecipeFormModal({
                       type="number"
                       step="0.1"
                       className="w-20 h-8 text-xs"
-                      placeholder="จำนวน"
+                      placeholder={t('recipes.quantity_placeholder')}
                       value={row.quantity}
                       onChange={(e) => {
                         const q = e.target.value ? Number(e.target.value) : '';
@@ -556,7 +550,7 @@ export function RecipeFormModal({
               <div>
                 <h4 className="text-sm font-semibold text-slate-900">{t('recipes.steps')}</h4>
                 <p className="text-[11px] text-slate-500">
-                  รองรับการทอดหลายรอบ อุณหภูมิ ระยะเวลา และทิศทางการวางหนังหมู
+                  {t('recipes.steps_hint')}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -568,7 +562,7 @@ export function RecipeFormModal({
                     onClick={() => setRecipeSteps([])}
                     className="text-xs h-7 text-slate-500 hover:text-red-600"
                   >
-                    {i18n.language === 'th' ? 'ล้างขั้นตอน' : 'Clear steps'}
+                    {t('recipes.clear_steps')}
                   </Button>
                 )}
                 <Button type="button" variant="outline" size="sm" onClick={addStepRow} className="text-xs h-7">
@@ -580,9 +574,7 @@ export function RecipeFormModal({
 
             {recipeSteps.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg">
-                {i18n.language === 'th'
-                  ? 'ยังไม่มีขั้นตอน คลิก "เพิ่มขั้นตอน" เพื่อระบุขั้นตอนการปรุง/การเคี่ยว/การทอด'
-                  : 'No steps yet. Click "Add Step" to define cooking/mixing/frying steps.'}
+                {t('recipes.no_steps_hint')}
               </div>
             ) : (
               <div className="space-y-3">
@@ -637,7 +629,7 @@ export function RecipeFormModal({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-3 space-y-1">
                         <Input
-                          placeholder="ชื่อขั้นตอน เช่น ทอดรอบแรกไฟกลาง"
+                          placeholder={t('recipes.step_name_placeholder')}
                           className="h-8 text-xs"
                           value={step.title}
                           onChange={(e) => {
@@ -655,7 +647,7 @@ export function RecipeFormModal({
                           <Label className="text-[11px] text-slate-600">{t('recipes.temperature')}</Label>
                           <Input
                             type="number"
-                            placeholder="เช่น 160"
+                            placeholder="160"
                             className="h-8 text-xs"
                             value={step.temperatureC}
                             onChange={(e) => {
@@ -674,7 +666,7 @@ export function RecipeFormModal({
                           <Label className="text-[11px] text-slate-600">{t('recipes.duration')}</Label>
                           <Input
                             type="number"
-                            placeholder="เช่น 15"
+                            placeholder="15"
                             className="h-8 text-xs"
                             value={step.durationMinutes}
                             onChange={(e) => {
@@ -701,7 +693,7 @@ export function RecipeFormModal({
                               );
                             }}
                           >
-                            <option value="">-- ไม่ระบุ --</option>
+                            <option value="">{t('recipes.unspecified')}</option>
                             {lookups.map((l) => (
                               <option key={l.id} value={l.id}>
                                 {i18n.language === 'th' ? l.nameTh : l.nameEn}
@@ -713,7 +705,7 @@ export function RecipeFormModal({
                     </div>
 
                     <Input
-                      placeholder="คำแนะนำในการทำขั้นตอนนี้"
+                      placeholder={t('recipes.step_instruction_placeholder')}
                       className="h-8 text-xs"
                       value={step.instruction}
                       onChange={(e) => {

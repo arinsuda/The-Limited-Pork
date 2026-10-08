@@ -80,6 +80,9 @@ type Version struct {
 	Notes                  *string            `json:"notes"`
 	Ingredients            []Ingredient       `json:"ingredients"`
 	Steps                  []Step             `json:"steps"`
+	IngredientCount        int                `json:"ingredientCount"`
+	StepCount              int                `json:"stepCount"`
+	TrialCount             int                `json:"trialCount"`
 	CreatedBy              uuid.UUID          `json:"createdBy"`
 	CreatedAt              time.Time          `json:"createdAt"`
 }

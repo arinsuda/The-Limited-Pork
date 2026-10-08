@@ -28,7 +28,24 @@ import {
   DialogFooter,
 } from '@/shared/ui/dialog';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from 'sonner';
+
+function TableSkeletonRows({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, r) => (
+        <TableRow key={r}>
+          {Array.from({ length: cols }).map((_, c) => (
+            <TableCell key={c}>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
 
 export function MasterDataPage() {
   const { t, i18n } = useTranslation();
@@ -36,33 +53,33 @@ export function MasterDataPage() {
   const { hasPermission } = useAuthStore();
 
   // Queries
-  const { data: units = [] } = useQuery<any[]>({
+  const { data: units = [], isLoading: isLoadingUnits } = useQuery<any[]>({
     queryKey: ['masterdata', 'units', 'all'],
     queryFn: () => http.get('/units?includeInactive=true'),
   });
 
-  const { data: tasteAttributes = [] } = useQuery<any[]>({
+  const { data: tasteAttributes = [], isLoading: isLoadingTaste } = useQuery<any[]>({
     queryKey: ['masterdata', 'taste-attributes', 'all'],
     queryFn: () => http.get('/taste-attributes?includeInactive=true'),
   });
 
-  const { data: stepTypes = [] } = useQuery<any[]>({
+  const { data: stepTypes = [], isLoading: isLoadingSteps } = useQuery<any[]>({
     queryKey: ['masterdata', 'step-types', 'all'],
     queryFn: () => http.get('/process-step-types?includeInactive=true'),
   });
 
-  const { data: lookups = [] } = useQuery<any[]>({
+  const { data: lookups = [], isLoading: isLoadingLookups } = useQuery<any[]>({
     queryKey: ['masterdata', 'lookups', 'all'],
     queryFn: () => http.get('/lookups?includeInactive=true'),
   });
 
-  const { data: ingredientsResp } = useQuery<any>({
+  const { data: ingredientsResp, isLoading: isLoadingIngredients } = useQuery<any>({
     queryKey: ['masterdata', 'ingredients', 'all'],
     queryFn: () => http.get('/ingredients?pageSize=100&includeInactive=true'),
   });
   const ingredients = ingredientsResp?.data ?? [];
 
-  const { data: settings = [] } = useQuery<any[]>({
+  const { data: settings = [], isLoading: isLoadingSettings } = useQuery<any[]>({
     queryKey: ['masterdata', 'settings'],
     queryFn: () => http.get('/settings'),
   });
@@ -101,7 +118,7 @@ export function MasterDataPage() {
           {t('masterdata.title')}
         </h1>
         <p className="text-xs text-slate-500 mt-1">
-          จัดการข้อมูลตั้งต้นของระบบ ทั้งหน่วยวัด มิติรสชาติ ขั้นตอนการทำ และวัตถุดิบ ปราศจากการ Hardcode
+          {t('masterdata.subtitle')}
         </p>
       </div>
 
@@ -142,39 +159,43 @@ export function MasterDataPage() {
                   <TableRow>
                     <TableHead>{t('masterdata.unit_code')}</TableHead>
                     <TableHead>{t('masterdata.unit_symbol')}</TableHead>
-                    <TableHead>ชื่อไทย / อังกฤษ</TableHead>
+                    <TableHead>{t('masterdata.name_th_en')}</TableHead>
                     <TableHead>{t('masterdata.unit_dimension')}</TableHead>
                     <TableHead>{t('masterdata.factor_to_base')}</TableHead>
-                    <TableHead className="w-20 text-center">สถานะ</TableHead>
+                    <TableHead className="w-20 text-center">{t('common.status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {units.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-mono text-xs font-bold text-slate-800">
-                        {u.code}
-                      </TableCell>
-                      <TableCell className="font-bold text-xs text-orange-600">{u.symbol}</TableCell>
-                      <TableCell className="text-xs text-slate-700">
-                        {u.nameTh} / {u.nameEn}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline">{u.dimension}</Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-600">{u.factorToBase}</TableCell>
-                      <TableCell className="text-center">
-                        {u.isActive ? (
-                          <Badge variant="success" className="text-[10px]">
-                            เปิด
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-[10px]">
-                            ปิด
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {isLoadingUnits ? (
+                    <TableSkeletonRows cols={6} />
+                  ) : (
+                    units.map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-mono text-xs font-bold text-slate-800">
+                          {u.code}
+                        </TableCell>
+                        <TableCell className="font-bold text-xs text-orange-600">{u.symbol}</TableCell>
+                        <TableCell className="text-xs text-slate-700">
+                          {u.nameTh} / {u.nameEn}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <Badge variant="outline">{u.dimension}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-600">{u.factorToBase}</TableCell>
+                        <TableCell className="text-center">
+                          {u.isActive ? (
+                            <Badge variant="success" className="text-[10px]">
+                              {t('masterdata.status_active')}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {t('masterdata.status_inactive')}
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -188,47 +209,51 @@ export function MasterDataPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>รหัสมิติ</TableHead>
-                    <TableHead>ชื่อมิติรสชาติ</TableHead>
-                    <TableHead>ช่วงคะแนน</TableHead>
+                    <TableHead>{t('masterdata.attribute_code')}</TableHead>
+                    <TableHead>{t('masterdata.attribute_name')}</TableHead>
+                    <TableHead>{t('masterdata.score_range')}</TableHead>
                     <TableHead>{t('masterdata.color')}</TableHead>
-                    <TableHead className="w-20 text-center">สถานะ</TableHead>
+                    <TableHead className="w-20 text-center">{t('common.status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tasteAttributes.map((ta) => (
-                    <TableRow key={ta.id}>
-                      <TableCell className="font-mono text-xs font-bold text-slate-800">
-                        {ta.code}
-                      </TableCell>
-                      <TableCell className="text-xs font-medium text-slate-900">
-                        {ta.nameTh} ({ta.nameEn})
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-600">
-                        {ta.minScore} ถึง {ta.maxScore}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-xs font-mono">
-                          <span
-                            className="inline-block h-3.5 w-3.5 rounded-full border border-slate-300"
-                            style={{ backgroundColor: ta.color }}
-                          />
-                          {ta.color}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {ta.isActive ? (
-                          <Badge variant="success" className="text-[10px]">
-                            เปิด
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-[10px]">
-                            ปิด
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {isLoadingTaste ? (
+                    <TableSkeletonRows cols={5} />
+                  ) : (
+                    tasteAttributes.map((ta) => (
+                      <TableRow key={ta.id}>
+                        <TableCell className="font-mono text-xs font-bold text-slate-800">
+                          {ta.code}
+                        </TableCell>
+                        <TableCell className="text-xs font-medium text-slate-900">
+                          {ta.nameTh} ({ta.nameEn})
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-600">
+                          {ta.minScore} - {ta.maxScore}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5 text-xs font-mono">
+                            <span
+                              className="inline-block h-3.5 w-3.5 rounded-full border border-slate-300"
+                              style={{ backgroundColor: ta.color }}
+                            />
+                            {ta.color}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {ta.isActive ? (
+                            <Badge variant="success" className="text-[10px]">
+                              {t('masterdata.status_active')}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {t('masterdata.status_inactive')}
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -242,55 +267,59 @@ export function MasterDataPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>รหัสขั้นตอน</TableHead>
-                    <TableHead>ชื่อประเภทขั้นตอน</TableHead>
-                    <TableHead>อุณหภูมิ</TableHead>
-                    <TableHead>ระยะเวลา</TableHead>
-                    <TableHead>ทิศทางหมู</TableHead>
-                    <TableHead>ทำซ้ำหลายรอบ</TableHead>
+                    <TableHead>{t('masterdata.step_code')}</TableHead>
+                    <TableHead>{t('masterdata.step_type_name')}</TableHead>
+                    <TableHead>{t('recipes.temperature')}</TableHead>
+                    <TableHead>{t('recipes.duration')}</TableHead>
+                    <TableHead>{t('recipes.orientation')}</TableHead>
+                    <TableHead>{t('masterdata.repeatable_label')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {stepTypes.map((st) => (
-                    <TableRow key={st.id}>
-                      <TableCell className="font-mono text-xs font-bold text-slate-800">
-                        {st.code}
-                      </TableCell>
-                      <TableCell className="text-xs font-semibold text-slate-900">
-                        {st.nameTh} ({st.nameEn})
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {st.usesTemperature ? (
-                          <Check className="h-4 w-4 text-emerald-600" />
-                        ) : (
-                          <X className="h-4 w-4 text-slate-300" />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {st.usesDuration ? (
-                          <Check className="h-4 w-4 text-emerald-600" />
-                        ) : (
-                          <X className="h-4 w-4 text-slate-300" />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {st.usesOrientation ? (
-                          <Check className="h-4 w-4 text-emerald-600" />
-                        ) : (
-                          <X className="h-4 w-4 text-slate-300" />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {st.isRepeatable ? (
-                          <Badge variant="warning" className="text-[10px]">
-                            รองรับรอบ 1, 2...
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-300 text-xs">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {isLoadingSteps ? (
+                    <TableSkeletonRows cols={6} />
+                  ) : (
+                    stepTypes.map((st) => (
+                      <TableRow key={st.id}>
+                        <TableCell className="font-mono text-xs font-bold text-slate-800">
+                          {st.code}
+                        </TableCell>
+                        <TableCell className="text-xs font-semibold text-slate-900">
+                          {st.nameTh} ({st.nameEn})
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {st.usesTemperature ? (
+                            <Check className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <X className="h-4 w-4 text-slate-300" />
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {st.usesDuration ? (
+                            <Check className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <X className="h-4 w-4 text-slate-300" />
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {st.usesOrientation ? (
+                            <Check className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <X className="h-4 w-4 text-slate-300" />
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {st.isRepeatable ? (
+                            <Badge variant="warning" className="text-[10px]">
+                              {t('masterdata.repeatable_badge')}
+                            </Badge>
+                          ) : (
+                            <span className="text-slate-300 text-xs">-</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -305,36 +334,40 @@ export function MasterDataPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('masterdata.lookup_category')}</TableHead>
-                    <TableHead>รหัส</TableHead>
-                    <TableHead>ชื่อไทย / อังกฤษ</TableHead>
-                    <TableHead className="w-20 text-center">สถานะ</TableHead>
+                    <TableHead>{t('masterdata.lookup_code')}</TableHead>
+                    <TableHead>{t('masterdata.name_th_en')}</TableHead>
+                    <TableHead className="w-20 text-center">{t('common.status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lookups.map((l) => (
-                    <TableRow key={l.id}>
-                      <TableCell className="text-xs font-bold text-slate-500">
-                        {l.category}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs font-semibold text-slate-800">
-                        {l.code}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-700">
-                        {l.nameTh} / {l.nameEn}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {l.isActive ? (
-                          <Badge variant="success" className="text-[10px]">
-                            เปิด
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-[10px]">
-                            ปิด
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {isLoadingLookups ? (
+                    <TableSkeletonRows cols={4} />
+                  ) : (
+                    lookups.map((l) => (
+                      <TableRow key={l.id}>
+                        <TableCell className="text-xs font-bold text-slate-500">
+                          {l.category}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs font-semibold text-slate-800">
+                          {l.code}
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-700">
+                          {l.nameTh} / {l.nameEn}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {l.isActive ? (
+                            <Badge variant="success" className="text-[10px]">
+                              {t('masterdata.status_active')}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {t('masterdata.status_inactive')}
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -348,27 +381,31 @@ export function MasterDataPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>รหัสวัตถุดิบ</TableHead>
-                    <TableHead>ชื่อวัตถุดิบ</TableHead>
-                    <TableHead>หน่วยมาตรฐาน</TableHead>
-                    <TableHead>คำแนะนำ</TableHead>
+                    <TableHead>{t('masterdata.ingredient_code')}</TableHead>
+                    <TableHead>{t('masterdata.ingredient_name')}</TableHead>
+                    <TableHead>{t('masterdata.standard_unit')}</TableHead>
+                    <TableHead>{t('masterdata.prep_notes')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {ingredients.map((ing: any) => (
-                    <TableRow key={ing.id}>
-                      <TableCell className="font-mono text-xs font-bold text-slate-800">
-                        {ing.code}
-                      </TableCell>
-                      <TableCell className="text-xs font-semibold text-slate-900">
-                        {ing.nameTh} ({ing.nameEn})
-                      </TableCell>
-                      <TableCell className="text-xs text-orange-600 font-bold">
-                        {ing.defaultUnit?.symbol}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500">{ing.notes || '-'}</TableCell>
-                    </TableRow>
-                  ))}
+                  {isLoadingIngredients ? (
+                    <TableSkeletonRows cols={4} />
+                  ) : (
+                    ingredients.map((ing: any) => (
+                      <TableRow key={ing.id}>
+                        <TableCell className="font-mono text-xs font-bold text-slate-800">
+                          {ing.code}
+                        </TableCell>
+                        <TableCell className="text-xs font-semibold text-slate-900">
+                          {ing.nameTh} ({ing.nameEn})
+                        </TableCell>
+                        <TableCell className="text-xs text-orange-600 font-bold">
+                          {ing.defaultUnit?.symbol}
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-500">{ing.notes || '-'}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -383,42 +420,46 @@ export function MasterDataPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('masterdata.setting_key')}</TableHead>
-                    <TableHead>คำอธิบาย</TableHead>
+                    <TableHead>{t('masterdata.description')}</TableHead>
                     <TableHead>{t('masterdata.setting_value')}</TableHead>
-                    <TableHead className="w-24 text-right">แก้ไข</TableHead>
+                    <TableHead className="w-24 text-right">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {settings.map((s: any) => (
-                    <TableRow key={s.key}>
-                      <TableCell className="font-mono text-xs font-bold text-slate-800">
-                        {s.key}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-600">
-                        {i18n.language === 'th' ? s.descriptionTh : s.descriptionEn}
-                      </TableCell>
-                      <TableCell className="text-xs font-bold text-orange-600">
-                        {JSON.stringify(s.value)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {hasPermission('settings.write') && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingSetting(s);
-                              setSettingValue(
-                                typeof s.value === 'object' ? JSON.stringify(s.value) : String(s.value),
-                              );
-                            }}
-                            className="text-xs text-orange-600"
-                          >
-                            แก้ไข
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {isLoadingSettings ? (
+                    <TableSkeletonRows cols={4} />
+                  ) : (
+                    settings.map((s: any) => (
+                      <TableRow key={s.key}>
+                        <TableCell className="font-mono text-xs font-bold text-slate-800">
+                          {s.key}
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-600">
+                          {i18n.language === 'th' ? s.descriptionTh : s.descriptionEn}
+                        </TableCell>
+                        <TableCell className="text-xs font-bold text-orange-600">
+                          {JSON.stringify(s.value)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {hasPermission('settings.write') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingSetting(s);
+                                setSettingValue(
+                                  typeof s.value === 'object' ? JSON.stringify(s.value) : String(s.value),
+                                );
+                              }}
+                              className="text-xs text-orange-600"
+                            >
+                              {t('masterdata.edit_setting')}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -431,10 +472,14 @@ export function MasterDataPage() {
         <Dialog open={Boolean(editingSetting)} onOpenChange={() => setEditingSetting(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>แก้ไขการตั้งค่า: {editingSetting.key}</DialogTitle>
+              <DialogTitle>
+                {t('masterdata.edit_setting_title', { key: editingSetting.key })}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-3 py-2">
-              <Label htmlFor="set-val">ค่าการตั้งค่า ({editingSetting.valueType})</Label>
+              <Label htmlFor="set-val">
+                {t('masterdata.setting_val_type', { type: editingSetting.valueType })}
+              </Label>
               <Input
                 id="set-val"
                 value={settingValue}
