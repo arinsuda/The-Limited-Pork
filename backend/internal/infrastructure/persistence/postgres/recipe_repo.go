@@ -76,7 +76,7 @@ func (r *RecipeRepo) List(status string, tagID *uuid.UUID, search string, limit,
 	}
 
 	query := fmt.Sprintf(`
-		SELECT r.id, r.code, r.name, r.description, r.status, r.current_version_id, r.created_by,
+		SELECT r.id, r.code, r.name, r.description, r.source_url, r.status, r.current_version_id, r.created_by,
 		       r.version, r.created_at, r.updated_at,
 		       COALESCE(rv.version_no, 1) as current_version_no,
 		       (SELECT COUNT(*) FROM trials t WHERE t.recipe_id = r.id AND t.deleted_at IS NULL) as trial_count,
@@ -104,7 +104,7 @@ func (r *RecipeRepo) List(status string, tagID *uuid.UUID, search string, limit,
 		var latestDate *string
 
 		if err := rows.Scan(
-			&rec.ID, &rec.Code, &rec.Name, &rec.Description, &rec.Status, &rec.CurrentVersionID, &rec.CreatedBy,
+			&rec.ID, &rec.Code, &rec.Name, &rec.Description, &rec.SourceURL, &rec.Status, &rec.CurrentVersionID, &rec.CreatedBy,
 			&rec.Version, &rec.CreatedAt, &rec.UpdatedAt,
 			&curVerNo, &rec.TrialCount, &latestDate, &bestScore,
 		); err != nil {
@@ -159,7 +159,7 @@ func (r *RecipeRepo) GetByID(id uuid.UUID) (*recipe.Recipe, error) {
 	q := GetQuerier(ctx, r.pool)
 
 	query := `
-		SELECT r.id, r.code, r.name, r.description, r.status, r.current_version_id, r.created_by,
+		SELECT r.id, r.code, r.name, r.description, r.source_url, r.status, r.current_version_id, r.created_by,
 		       r.version, r.created_at, r.updated_at,
 		       (SELECT COUNT(*) FROM trials t WHERE t.recipe_id = r.id AND t.deleted_at IS NULL) as trial_count,
 		       (SELECT TO_CHAR(MAX(t.trial_date), 'YYYY-MM-DD') FROM trials t WHERE t.recipe_id = r.id AND t.deleted_at IS NULL) as latest_trial_date,
@@ -172,7 +172,7 @@ func (r *RecipeRepo) GetByID(id uuid.UUID) (*recipe.Recipe, error) {
 	var bestScore *float64
 
 	err := q.QueryRow(ctx, query, id).Scan(
-		&rec.ID, &rec.Code, &rec.Name, &rec.Description, &rec.Status, &rec.CurrentVersionID, &rec.CreatedBy,
+		&rec.ID, &rec.Code, &rec.Name, &rec.Description, &rec.SourceURL, &rec.Status, &rec.CurrentVersionID, &rec.CreatedBy,
 		&rec.Version, &rec.CreatedAt, &rec.UpdatedAt,
 		&rec.TrialCount, &latestDate, &bestScore,
 	)
@@ -219,11 +219,11 @@ func (r *RecipeRepo) Create(rec *recipe.Recipe, ver *recipe.Version, tagIDs []uu
 
 	// Insert Recipe
 	recQuery := `
-		INSERT INTO recipes (id, code, name, description, status, current_version_id, created_by, version, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO recipes (id, code, name, description, source_url, status, current_version_id, created_by, version, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`
 	_, err := q.Exec(ctx, recQuery,
-		rec.ID, rec.Code, rec.Name, rec.Description, rec.Status, nil, rec.CreatedBy,
+		rec.ID, rec.Code, rec.Name, rec.Description, rec.SourceURL, rec.Status, nil, rec.CreatedBy,
 		rec.Version, rec.CreatedAt, rec.UpdatedAt,
 	)
 	if err != nil {
@@ -257,10 +257,10 @@ func (r *RecipeRepo) Update(rec *recipe.Recipe, tagIDs []uuid.UUID) error {
 
 	query := `
 		UPDATE recipes
-		SET name = $1, description = $2, version = version + 1, updated_at = NOW()
-		WHERE id = $3 AND version = $4 AND deleted_at IS NULL
+		SET name = $1, description = $2, source_url = $3, version = version + 1, updated_at = NOW()
+		WHERE id = $4 AND version = $5 AND deleted_at IS NULL
 	`
-	tag, err := q.Exec(ctx, query, rec.Name, rec.Description, rec.ID, rec.Version)
+	tag, err := q.Exec(ctx, query, rec.Name, rec.Description, rec.SourceURL, rec.ID, rec.Version)
 	if err != nil {
 		return err
 	}
@@ -381,6 +381,75 @@ func (r *RecipeRepo) SetCurrentVersion(recipeID, versionID uuid.UUID) error {
 
 	_, err := q.Exec(ctx, `UPDATE recipes SET current_version_id = $1, updated_at = NOW() WHERE id = $2`, versionID, recipeID)
 	return err
+}
+
+func (r *RecipeRepo) UpdateVersion(ver *recipe.Version) error {
+	ctx := context.Background()
+	q := GetQuerier(ctx, r.pool)
+
+	query := `
+		UPDATE recipe_versions
+		SET change_note = $1, input_quantity = $2, input_unit_id = $3,
+		    expected_output_quantity = $4, expected_output_unit_id = $5, expected_yield_pct = $6,
+		    notes = $7
+		WHERE id = $8
+	`
+	_, err := q.Exec(ctx, query,
+		ver.ChangeNote, ver.InputQuantity, ver.InputUnitID,
+		ver.ExpectedOutputQuantity, ver.ExpectedOutputUnitID, ver.ExpectedYieldPct,
+		ver.Notes, ver.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update recipe version: %w", err)
+	}
+
+	// Delete and re-insert ingredients
+	if _, err := q.Exec(ctx, `DELETE FROM recipe_ingredients WHERE version_id = $1`, ver.ID); err != nil {
+		return fmt.Errorf("failed to delete old ingredients: %w", err)
+	}
+	for _, ing := range ver.Ingredients {
+		ingQuery := `
+			INSERT INTO recipe_ingredients (id, version_id, line_no, ingredient_id, quantity, unit_id, preparation_note, is_optional)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		`
+		_, err := q.Exec(ctx, ingQuery,
+			ing.ID, ver.ID, ing.LineNo, ing.IngredientID, ing.Quantity, ing.UnitID, ing.PreparationNote, ing.IsOptional,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to insert recipe ingredient: %w", err)
+		}
+	}
+
+	// Delete and re-insert steps
+	if _, err := q.Exec(ctx, `DELETE FROM process_steps WHERE version_id = $1`, ver.ID); err != nil {
+		return fmt.Errorf("failed to delete old process steps: %w", err)
+	}
+	for _, step := range ver.Steps {
+		paramsBytes, _ := json.Marshal(step.Params)
+		stepQuery := `
+			INSERT INTO process_steps (
+				id, version_id, step_no, round_no, step_type_id, title, instruction,
+				temperature_c, duration_minutes, orientation_id, params, notes
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		`
+		_, err := q.Exec(ctx, stepQuery,
+			step.ID, ver.ID, step.StepNo, step.RoundNo, step.StepTypeID, step.Title, step.Instruction,
+			step.TemperatureC, step.DurationMinutes, step.OrientationID, paramsBytes, step.Notes,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to insert process step: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *RecipeRepo) CountTrialsByVersionID(versionID uuid.UUID) (int, error) {
+	ctx := context.Background()
+	q := GetQuerier(ctx, r.pool)
+	var count int
+	err := q.QueryRow(ctx, `SELECT COUNT(*) FROM trials WHERE recipe_version_id = $1 AND deleted_at IS NULL`, versionID).Scan(&count)
+	return count, err
 }
 
 func (r *RecipeRepo) ListVersions(recipeID uuid.UUID) ([]recipe.Version, error) {

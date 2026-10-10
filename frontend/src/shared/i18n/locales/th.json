@@ -11,7 +11,8 @@
     "masterdata": "ข้อมูลหลัก",
     "users": "ผู้ใช้งานและสิทธิ์",
     "settings": "ตั้งค่าระบบ",
-    "audit_logs": "ประวัติการใช้งาน"
+    "audit_logs": "ประวัติการใช้งาน",
+    "main_menu": "เมนูหลัก"
   },
   "common": {
     "create": "สร้างใหม่",
@@ -138,6 +139,14 @@
     "preset_fry2_title": "ทอดรอบสอง เร่งไฟให้หนังพองกรอบ",
     "preset_fry2_desc": "เร่งไฟแรง หนังหงายขึ้นหรือตะแคงให้หนังฟูระเบิดกรอบ",
     "action_delete": "ลบสูตร",
+    "action_edit": "แก้ไขสูตร",
+    "edit_title": "แก้ไขสูตรหมูกรอบ",
+    "recipe_updated": "บันทึกการแก้ไขสูตรสำเร็จ",
+    "source_url": "แหล่งที่มา / ลิงก์วิดีโออ้างอิง",
+    "source_url_placeholder": "เช่น https://www.youtube.com/watch?v=... หรือ TikTok / Facebook / เว็บไซต์",
+    "source_link": "เปิดดูแหล่งที่มา / วิดีโอ",
+    "video_preview": "วิดีโอวิธีทำ (Video Reference)",
+    "toggle_video": "ดูวิดีโอวิธีทำ",
     "delete_confirm_title": "ยืนยันการลบสูตร",
     "delete_confirm_desc": "คุณแน่ใจหรือไม่ว่าต้องการลบสูตร \"{{name}}\" ({{code}})? การดำเนินการนี้จะนำสูตรออกจากระบบและไม่สามารถย้อนกลับได้",
     "recipe_deleted": "ลบสูตรสำเร็จ"

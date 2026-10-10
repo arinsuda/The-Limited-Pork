@@ -58,6 +58,7 @@ type CreateRecipeInput struct {
 	Code           *string            `json:"code"`
 	Name           string             `json:"name"`
 	Description    *string            `json:"description"`
+	SourceURL      *string            `json:"sourceUrl"`
 	TagIDs         []uuid.UUID        `json:"tagIds"`
 	InitialVersion VersionInput       `json:"initialVersion"`
 }
@@ -155,6 +156,7 @@ func (s *RecipeService) Create(ctx context.Context, actorID uuid.UUID, input Cre
 		Code:             code,
 		Name:             input.Name,
 		Description:      input.Description,
+		SourceURL:        input.SourceURL,
 		Status:           recipe.StatusDraft,
 		CurrentVersionID: &versionID,
 		CurrentVersion:   ver,
@@ -191,7 +193,17 @@ func (s *RecipeService) Create(ctx context.Context, actorID uuid.UUID, input Cre
 	return s.GetByID(ctx, rec.ID)
 }
 
-func (s *RecipeService) Update(ctx context.Context, id uuid.UUID, name string, description *string, tagIDs []uuid.UUID, version int) (*recipe.Recipe, error) {
+func (s *RecipeService) Update(
+	ctx context.Context,
+	actorID uuid.UUID,
+	id uuid.UUID,
+	name string,
+	description *string,
+	sourceURL *string,
+	tagIDs []uuid.UUID,
+	version int,
+	currentVersion *VersionInput,
+) (*recipe.Recipe, error) {
 	r, err := s.recipeRepo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -199,9 +211,58 @@ func (s *RecipeService) Update(ctx context.Context, id uuid.UUID, name string, d
 
 	r.Name = name
 	r.Description = description
+	r.SourceURL = sourceURL
 	r.Version = version
 
-	if err := s.recipeRepo.Update(r, tagIDs); err != nil {
+	err = s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+		if err := s.recipeRepo.Update(r, tagIDs); err != nil {
+			return err
+		}
+
+		if currentVersion != nil && r.CurrentVersionID != nil {
+			trialCount, err := s.recipeRepo.CountTrialsByVersionID(*r.CurrentVersionID)
+			if err != nil {
+				return err
+			}
+
+			if trialCount == 0 {
+				curVer, err := s.recipeRepo.GetVersionByID(*r.CurrentVersionID)
+				if err != nil {
+					return err
+				}
+				ver, err := s.buildVersion(txCtx, id, curVer.ID, curVer.VersionNo, *currentVersion, actorID)
+				if err != nil {
+					return err
+				}
+				if err := s.recipeRepo.UpdateVersion(ver); err != nil {
+					return err
+				}
+			} else {
+				versions, err := s.recipeRepo.ListVersions(id)
+				if err != nil {
+					return err
+				}
+				nextVerNo := 1
+				for _, v := range versions {
+					if v.VersionNo >= nextVerNo {
+						nextVerNo = v.VersionNo + 1
+					}
+				}
+				newVersionID := s.idGen.NewUUID()
+				ver, err := s.buildVersion(txCtx, id, newVersionID, nextVerNo, *currentVersion, actorID)
+				if err != nil {
+					return err
+				}
+				if err := s.recipeRepo.CreateVersion(ver); err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 

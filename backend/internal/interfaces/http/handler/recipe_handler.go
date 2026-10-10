@@ -83,10 +83,12 @@ func (h *RecipeHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 type UpdateRecipeRequest struct {
-	Name        string      `json:"name"`
-	Description *string     `json:"description"`
-	TagIDs      []uuid.UUID `json:"tagIds"`
-	Version     int         `json:"version"`
+	Name           string                    `json:"name"`
+	Description    *string                   `json:"description"`
+	SourceURL      *string                   `json:"sourceUrl"`
+	TagIDs         []uuid.UUID               `json:"tagIds"`
+	Version        int                       `json:"version"`
+	CurrentVersion *application.VersionInput `json:"currentVersion,omitempty"`
 }
 
 func (h *RecipeHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +104,8 @@ func (h *RecipeHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rec, err := h.recipeService.Update(r.Context(), id, req.Name, req.Description, req.TagIDs, req.Version)
+	claims := middleware.GetUserClaims(r.Context())
+	rec, err := h.recipeService.Update(r.Context(), claims.UserID, id, req.Name, req.Description, req.SourceURL, req.TagIDs, req.Version, req.CurrentVersion)
 	if err != nil {
 		response.Error(w, r, err)
 		return

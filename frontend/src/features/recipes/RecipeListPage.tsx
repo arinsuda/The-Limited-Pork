@@ -12,6 +12,8 @@ import {
   Layers,
   FlaskConical,
   Trash2,
+  Pencil,
+  Video,
 } from 'lucide-react';
 import { http } from '@/shared/lib/http/client';
 import { Button } from '@/shared/ui/button';
@@ -36,6 +38,7 @@ interface RecipeSummary {
   code: string;
   name: string;
   description: string | null;
+  sourceUrl: string | null;
   status: 'DRAFT' | 'TESTING' | 'APPROVED' | 'ARCHIVED';
   currentVersionNo: number;
   trialCount: number;
@@ -67,6 +70,16 @@ export function RecipeListPage() {
   const [selectedTagId, setSelectedTagId] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recipeToDelete, setRecipeToDelete] = useState<RecipeSummary | null>(null);
+  const [editingRecipe, setEditingRecipe] = useState<any | null>(null);
+
+  const handleOpenEdit = async (rec: RecipeSummary) => {
+    try {
+      const detail = await http.get(`/recipes/${rec.id}`);
+      setEditingRecipe(detail);
+    } catch {
+      setEditingRecipe(rec);
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (recipeId: string) => http.delete(`/recipes/${recipeId}`),
@@ -281,6 +294,16 @@ export function RecipeListPage() {
                     {rec.code}
                   </div>
 
+                  {rec.sourceUrl && (
+                    <div
+                      className="absolute bottom-2.5 right-2.5 bg-red-600/90 text-white p-1 rounded-md shadow-xs backdrop-blur-xs flex items-center gap-1 text-[10px] font-semibold px-1.5"
+                      title={t('recipes.source_link')}
+                    >
+                      <Video className="h-3 w-3" />
+                      <span>Video</span>
+                    </div>
+                  )}
+
                   <div className="absolute top-2.5 right-2.5">{getStatusBadge(rec.status)}</div>
                 </div>
 
@@ -347,18 +370,32 @@ export function RecipeListPage() {
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
                 {hasPermission('recipes.write') && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setRecipeToDelete(rec);
-                    }}
-                    className="h-8 w-8 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 shrink-0"
-                    title={t('recipes.action_delete')}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEdit(rec);
+                      }}
+                      className="h-8 w-8 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 shrink-0"
+                      title={t('recipes.action_edit')}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRecipeToDelete(rec);
+                      }}
+                      className="h-8 w-8 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 shrink-0"
+                      title={t('recipes.action_delete')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
                 )}
               </div>
             </Card>
@@ -367,7 +404,19 @@ export function RecipeListPage() {
       )}
 
       {/* Create Modal */}
-      <RecipeFormModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+      <RecipeFormModal open={isModalOpen} onOpenChange={setIsModalOpen} mode="create" />
+
+      {/* Edit Modal */}
+      {editingRecipe && (
+        <RecipeFormModal
+          open={Boolean(editingRecipe)}
+          onOpenChange={(open) => !open && setEditingRecipe(null)}
+          mode="edit"
+          recipeId={editingRecipe.id}
+          existingRecipeName={editingRecipe.name}
+          initialRecipe={editingRecipe}
+        />
+      )}
 
       {/* Reusable Delete Confirmation Modal */}
       <ConfirmModal

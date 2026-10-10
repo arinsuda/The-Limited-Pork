@@ -100,7 +100,34 @@ export function parseEnv(raw: Record<string, unknown>) {
 
 export type AppEnv = ReturnType<typeof parseEnv>;
 
+import { Capacitor } from '@capacitor/core';
+
 export const env: AppEnv = parseEnv(import.meta.env as unknown as Record<string, unknown>);
+
+export const DEFAULT_MOBILE_API_URL = 'http://192.168.1.114:8080/api/v1';
+
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('API_BASE_URL');
+    if (custom && custom.trim() !== '') {
+      return custom.trim().replace(/\/+$/, '');
+    }
+    if (Capacitor.isNativePlatform()) {
+      return DEFAULT_MOBILE_API_URL;
+    }
+  }
+  return env.apiBaseUrl;
+}
+
+export function setCustomApiBaseUrl(url: string | null): void {
+  if (typeof window !== 'undefined') {
+    if (url && url.trim() !== '') {
+      localStorage.setItem('API_BASE_URL', url.trim().replace(/\/+$/, ''));
+    } else {
+      localStorage.removeItem('API_BASE_URL');
+    }
+  }
+}
 
 /** Resolve the WebSocket endpoint: explicit VITE_WS_URL, else derived from the API base URL. */
 export function resolveWsUrl(

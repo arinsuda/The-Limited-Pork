@@ -37,39 +37,44 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-slate-50">
-        <header className="border-b border-slate-200 bg-white px-4 sm:px-8 py-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Skeleton className="h-9 w-32 rounded-lg" />
-              <div className="hidden md:flex items-center gap-2">
-                <Skeleton className="h-8 w-24 rounded-md" />
-                <Skeleton className="h-8 w-28 rounded-md" />
-                <Skeleton className="h-8 w-28 rounded-md" />
-                <Skeleton className="h-8 w-28 rounded-md" />
-              </div>
-            </div>
+      <div className="min-h-screen flex bg-slate-50">
+        <aside className="hidden md:flex flex-col w-64 border-r border-slate-200 bg-white p-4 space-y-4 shrink-0">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-9 rounded-xl" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+          <div className="space-y-2 pt-4">
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-9 w-full rounded-xl" />
+          </div>
+        </aside>
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-16 border-b border-slate-200 bg-white px-4 sm:px-8 flex items-center justify-between">
+            <Skeleton className="h-5 w-40" />
             <div className="flex items-center gap-3">
               <Skeleton className="h-8 w-12 rounded-md" />
               <Skeleton className="h-8 w-8 rounded-full" />
             </div>
-          </div>
-        </header>
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-6">
-          <div className="flex justify-between items-center">
-            <div className="space-y-2">
-              <Skeleton className="h-7 w-48" />
-              <Skeleton className="h-4 w-72" />
+          </header>
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-48" />
+                <Skeleton className="h-4 w-72" />
+              </div>
+              <Skeleton className="h-9 w-28 rounded-md" />
             </div>
-            <Skeleton className="h-9 w-28 rounded-md" />
-          </div>
-          <Skeleton className="h-12 w-full rounded-xl" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Skeleton className="h-64 rounded-xl" />
-            <Skeleton className="h-64 rounded-xl" />
-            <Skeleton className="h-64 rounded-xl" />
-          </div>
-        </main>
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <Skeleton className="h-64 rounded-xl" />
+              <Skeleton className="h-64 rounded-xl" />
+              <Skeleton className="h-64 rounded-xl" />
+            </div>
+          </main>
+        </div>
       </div>
     );
   }

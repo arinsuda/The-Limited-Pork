@@ -45,18 +45,19 @@ func (s Status) CanTransitionTo(next Status) bool {
 }
 
 type Recipe struct {
-	ID               uuid.UUID      `json:"id"`
-	Code             string         `json:"code"`
-	Name             string         `json:"name"`
-	Description      *string        `json:"description"`
-	Status           Status         `json:"status"`
-	CurrentVersionID *uuid.UUID     `json:"currentVersionId"`
-	CurrentVersion   *Version       `json:"currentVersion,omitempty"`
+	ID               uuid.UUID           `json:"id"`
+	Code             string              `json:"code"`
+	Name             string              `json:"name"`
+	Description      *string             `json:"description"`
+	SourceURL        *string             `json:"sourceUrl,omitempty"`
+	Status           Status              `json:"status"`
+	CurrentVersionID *uuid.UUID          `json:"currentVersionId"`
+	CurrentVersion   *Version            `json:"currentVersion,omitempty"`
 	Tags             []masterdata.Lookup `json:"tags"`
-	CreatedBy        uuid.UUID      `json:"createdBy"`
-	Version          int            `json:"version"`
-	CreatedAt        time.Time      `json:"createdAt"`
-	UpdatedAt        time.Time      `json:"updatedAt"`
+	CreatedBy        uuid.UUID           `json:"createdBy"`
+	Version          int                 `json:"version"`
+	CreatedAt        time.Time           `json:"createdAt"`
+	UpdatedAt        time.Time           `json:"updatedAt"`
 
 	// Summary stats
 	TrialCount       int        `json:"trialCount"`
@@ -167,7 +168,9 @@ type Repository interface {
 	GetVersionByID(id uuid.UUID) (*Version, error)
 	GetVersionByNo(recipeID uuid.UUID, versionNo int) (*Version, error)
 	CreateVersion(v *Version) error
+	UpdateVersion(v *Version) error
 	SetCurrentVersion(recipeID, versionID uuid.UUID) error
+	CountTrialsByVersionID(versionID uuid.UUID) (int, error)
 
 	// Running code generator
 	NextRecipeCode(prefix string) (string, error)

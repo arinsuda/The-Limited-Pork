@@ -1,5 +1,5 @@
 import { http } from '@/shared/lib/http/client';
-import { env } from '@/shared/config/env';
+import { env, getApiBaseUrl, resolveWsUrl } from '@/shared/config/env';
 import { toast } from 'sonner';
 import i18n from '@/shared/i18n';
 import type { QueryClient } from '@tanstack/react-query';
@@ -56,8 +56,8 @@ export class WSManager {
         return;
       }
 
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws?ticket=${encodeURIComponent(ticketRes.ticket)}`;
+      const baseWs = resolveWsUrl(getApiBaseUrl(), env.wsUrl);
+      const wsUrl = `${baseWs}${baseWs.includes('?') ? '&' : '?'}ticket=${encodeURIComponent(ticketRes.ticket)}`;
 
       this.socket = new WebSocket(wsUrl);
 

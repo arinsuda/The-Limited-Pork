@@ -2,13 +2,14 @@ import * as React from 'react';
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Globe, Lock, Mail, Loader2 } from 'lucide-react';
+import { Globe, Lock, Mail, Loader2, Settings } from 'lucide-react';
 import { useAuthStore } from './auth-store';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 import { isApiError } from '@/shared/lib/http/api-error';
+import { getApiBaseUrl, setCustomApiBaseUrl } from '@/shared/config/env';
 
 export function LoginPage() {
   const { t, i18n } = useTranslation();
@@ -20,6 +21,16 @@ export function LoginPage() {
   const [password, setPassword] = useState('Admin@123456');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [showServerConfig, setShowServerConfig] = useState(false);
+  const [serverUrl, setServerUrl] = useState(getApiBaseUrl());
+  const [saveServerSuccess, setSaveServerSuccess] = useState(false);
+
+  const handleSaveServerUrl = () => {
+    setCustomApiBaseUrl(serverUrl);
+    setSaveServerSuccess(true);
+    setTimeout(() => setSaveServerSuccess(false), 2000);
+  };
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/recipes';
 
@@ -69,8 +80,12 @@ export function LoginPage() {
       <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-600 text-white shadow-xl shadow-orange-500/25 mb-4">
-            <span className="font-bold text-3xl">หมู</span>
+          <div className="flex justify-center mb-3">
+            <img
+              src="/logo_1.png"
+              alt={t('app.title')}
+              className="h-28 w-28 object-contain drop-shadow-md hover:scale-105 transition-transform"
+            />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('app.title')}</h1>
           <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">{t('app.tagline')}</p>
@@ -140,6 +155,46 @@ export function LoginPage() {
                 Default Credentials: <strong className="text-slate-600">admin@mookrob.local</strong> /{' '}
                 <strong className="text-slate-600">Admin@123456</strong>
               </span>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col items-center">
+              <button
+                type="button"
+                onClick={() => setShowServerConfig(!showServerConfig)}
+                className="text-[11px] text-slate-500 hover:text-slate-700 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <Settings className="h-3 w-3" />
+                <span>{t('auth.server_settings', 'ตั้งค่าเซิร์ฟเวอร์ (API Endpoint)')}</span>
+              </button>
+
+              {showServerConfig && (
+                <div className="w-full mt-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-left space-y-2">
+                  <Label htmlFor="server-url" className="text-[11px] text-slate-600">
+                    Backend API URL
+                  </Label>
+                  <div className="flex gap-1.5">
+                    <Input
+                      id="server-url"
+                      value={serverUrl}
+                      onChange={(e) => setServerUrl(e.target.value)}
+                      placeholder="http://192.168.1.114:8080/api/v1"
+                      className="text-xs h-8 bg-white"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="h-8 text-xs shrink-0"
+                      onClick={handleSaveServerUrl}
+                    >
+                      {saveServerSuccess ? '✓ บันทึกแล้ว' : 'บันทึก'}
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-slate-400">
+                    สำหรับมือถือเชื่อมต่อ WiFi: แนะนำใส่ IP ของเครื่องคอมพิวเตอร์ เช่น http://192.168.1.114:8080/api/v1
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

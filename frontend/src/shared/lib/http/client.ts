@@ -1,5 +1,5 @@
 import { ApiError } from './api-error';
-import { env } from '@/shared/config/env';
+import { getApiBaseUrl } from '@/shared/config/env';
 import i18n from '@/shared/i18n';
 
 let currentAccessToken: string | null = null;
@@ -33,7 +33,8 @@ interface RequestOptions extends RequestInit {
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const url = path.startsWith('http') ? path : `${env.apiBaseUrl}${path}`;
+  const baseUrl = getApiBaseUrl();
+  const url = path.startsWith('http') ? path : `${baseUrl}${path}`;
   const headers = new Headers(options.headers);
 
   if (!options.skipAuth && currentAccessToken) {
@@ -49,7 +50,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const response = await fetch(url, {
     ...options,
     headers,
-    credentials: 'same-origin',
+    credentials: 'include',
   });
 
   // Handle 204 No Content
@@ -62,9 +63,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     if (!isRefreshing) {
       isRefreshing = true;
       try {
-        const refreshRes = await fetch(`${env.apiBaseUrl}/auth/refresh`, {
+        const refreshRes = await fetch(`${baseUrl}/auth/refresh`, {
           method: 'POST',
-          credentials: 'same-origin',
+          credentials: 'include',
           headers: { 'Accept-Language': i18n.language || 'th' },
         });
 

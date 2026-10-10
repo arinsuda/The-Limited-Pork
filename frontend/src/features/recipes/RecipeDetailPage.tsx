@@ -22,6 +22,9 @@ import {
   Scale,
   ChefHat,
   Trash2,
+  Video,
+  ExternalLink,
+  Pencil,
 } from 'lucide-react';
 import {
   LineChart,
@@ -32,6 +35,26 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+
+function getYouTubeEmbedUrl(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const trimmed = url.trim();
+    const shortMatch = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+    if (shortMatch && shortMatch[1]) {
+      return `https://www.youtube.com/embed/${shortMatch[1]}`;
+    }
+    const longMatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (longMatch && longMatch[1]) {
+      return `https://www.youtube.com/embed/${longMatch[1]}`;
+    }
+    const shortsMatch = trimmed.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
+    if (shortsMatch && shortsMatch[1]) {
+      return `https://www.youtube.com/embed/${shortsMatch[1]}`;
+    }
+  } catch {}
+  return null;
+}
 
 function getStepIcon(iconName: string | null, code?: string) {
   const key = (iconName || code || '').toLowerCase();
@@ -73,6 +96,7 @@ interface RecipeDetail {
   code: string;
   name: string;
   description: string | null;
+  sourceUrl: string | null;
   status: 'DRAFT' | 'TESTING' | 'APPROVED' | 'ARCHIVED';
   version: number;
   coverUrl: string | null;
@@ -144,6 +168,7 @@ export function RecipeDetailPage() {
   const { hasPermission } = useAuthStore();
 
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Fetch Recipe Detail
   const { data: recipe, isLoading } = useQuery<RecipeDetail>({
@@ -356,11 +381,43 @@ export function RecipeDetailPage() {
             {recipe.description && (
               <p className="text-xs text-slate-500 mt-1">{recipe.description}</p>
             )}
+
+            {/* Source Reference Link */}
+            {recipe.sourceUrl && (
+              <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                <a
+                  href={recipe.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors shadow-2xs group"
+                >
+                  <Video className="h-3.5 w-3.5 text-red-600 group-hover:scale-110 transition-transform" />
+                  <span>{t('recipes.source_link')}</span>
+                  <ExternalLink className="h-3 w-3 text-red-400" />
+                </a>
+                <span className="text-[11px] text-slate-400 truncate max-w-xs sm:max-w-md">
+                  {recipe.sourceUrl}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          {/* Edit Recipe Button */}
+          {hasPermission('recipes.write') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditModalOpen(true)}
+              className="text-xs text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1" />
+              {t('recipes.action_edit')}
+            </Button>
+          )}
+
           {/* Status Transitions */}
           {hasPermission('recipes.write') && recipe.status === 'DRAFT' && (
             <Button
@@ -410,6 +467,40 @@ export function RecipeDetailPage() {
           )}
         </div>
       </div>
+
+      {/* YouTube Video Embed Preview if sourceUrl is YouTube */}
+      {recipe.sourceUrl && getYouTubeEmbedUrl(recipe.sourceUrl) && (
+        <Card className="overflow-hidden border-slate-200 shadow-xs bg-white">
+          <CardHeader className="py-2.5 px-4 bg-slate-50/80 border-b border-slate-100 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Video className="h-4 w-4 text-red-600" />
+              <CardTitle className="text-xs font-semibold text-slate-800">
+                {t('recipes.video_preview')}
+              </CardTitle>
+            </div>
+            <a
+              href={recipe.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-slate-500 hover:text-red-600 flex items-center gap-1 transition-colors"
+            >
+              <span>{t('recipes.source_link')}</span>
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </CardHeader>
+          <CardContent className="p-0 bg-black flex justify-center">
+            <div className="w-full max-w-2xl aspect-video">
+              <iframe
+                src={getYouTubeEmbedUrl(recipe.sourceUrl)!}
+                title={recipe.name}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Main Tabs */}
       <Tabs defaultValue="steps" className="space-y-6">
@@ -841,12 +932,24 @@ export function RecipeDetailPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Modal for editing this recipe */}
+      <RecipeFormModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        mode="edit"
+        recipeId={recipe.id}
+        existingRecipeName={recipe.name}
+        initialRecipe={recipe}
+      />
+
       {/* Modal for creating a new version of this recipe */}
       <RecipeFormModal
         open={isVersionModalOpen}
         onOpenChange={setIsVersionModalOpen}
+        mode="new_version"
         recipeId={recipe.id}
         existingRecipeName={recipe.name}
+        initialRecipe={recipe}
       />
 
       {/* Reusable Delete Confirmation Modal */}

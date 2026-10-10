@@ -11,7 +11,8 @@
     "masterdata": "Master Data",
     "users": "Users & Roles",
     "settings": "Settings",
-    "audit_logs": "Audit Logs"
+    "audit_logs": "Audit Logs",
+    "main_menu": "Main Menu"
   },
   "common": {
     "create": "Create",
@@ -138,6 +139,14 @@
     "preset_fry2_title": "Second Fry, High Heat for Crispy Skin",
     "preset_fry2_desc": "High heat fry, skin up or tilted to pop and puff the crackling",
     "action_delete": "Delete Recipe",
+    "action_edit": "Edit Recipe",
+    "edit_title": "Edit Crispy Pork Recipe",
+    "recipe_updated": "Recipe updated successfully",
+    "source_url": "Source / Video Reference URL",
+    "source_url_placeholder": "e.g., https://www.youtube.com/watch?v=... or TikTok / Facebook / Website",
+    "source_link": "View Source / Video",
+    "video_preview": "Video Reference",
+    "toggle_video": "Watch Video Tutorial",
     "delete_confirm_title": "Confirm Recipe Deletion",
     "delete_confirm_desc": "Are you sure you want to delete recipe \"{{name}}\" ({{code}})? This action cannot be undone.",
     "recipe_deleted": "Recipe deleted successfully"

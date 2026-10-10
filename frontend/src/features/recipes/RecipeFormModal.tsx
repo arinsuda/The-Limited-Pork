@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Loader2, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Loader2, Sparkles, Video, Pencil } from 'lucide-react';
 import { http } from '@/shared/lib/http/client';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -68,33 +68,39 @@ interface IngredientInput {
   isOptional: boolean;
 }
 
-interface RecipeFormModalProps {
+export interface RecipeFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  recipeId?: string; // If provided, creates a new version for existing recipe
+  mode?: 'create' | 'edit' | 'new_version';
+  recipeId?: string; // If provided, creates a new version for existing recipe or edits
   existingRecipeName?: string;
+  initialRecipe?: any;
 }
 
 export function RecipeFormModal({
   open,
   onOpenChange,
+  mode = 'create',
   recipeId,
   existingRecipeName,
+  initialRecipe,
 }: RecipeFormModalProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
-  const isCreatingVersion = Boolean(recipeId);
+  const isEditing = mode === 'edit';
+  const isCreatingVersion = mode === 'new_version' || (!mode && Boolean(recipeId) && !isEditing);
 
   // Form state
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [description, setDescription] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
   const [changeNote, setChangeNote] = useState('');
   const [inputQuantity, setInputQuantity] = useState<number | ''>(1);
   const [inputUnitId, setInputUnitId] = useState('');
   const [expectedOutputQuantity, setExpectedOutputQuantity] = useState<number | ''>(650);
   const [expectedOutputUnitId, setExpectedOutputUnitId] = useState('');
-  const [notes] = useState('');
+  const [notes, setNotes] = useState('');
 
   // Master data queries
   const { data: units = [] } = useQuery<Unit[]>({
@@ -147,9 +153,117 @@ export function RecipeFormModal({
   // Steps state
   const [recipeSteps, setRecipeSteps] = useState<StepInput[]>([]);
 
-  // Preset initial steps if empty
-  React.useEffect(() => {
-    if (open && recipeSteps.length === 0 && stepTypes.length > 0) {
+  // Effect to populate or reset form when modal opens
+  useEffect(() => {
+    if (!open) return;
+
+    if (isEditing && initialRecipe) {
+      setName(initialRecipe.name || '');
+      setCode(initialRecipe.code || '');
+      setDescription(initialRecipe.description || '');
+      setSourceUrl(initialRecipe.sourceUrl || '');
+      setSelectedTagIds(initialRecipe.tags?.map((tag: any) => tag.id) || []);
+
+      const cur = initialRecipe.currentVersion;
+      if (cur) {
+        setInputQuantity(typeof cur.inputQuantity === 'number' ? cur.inputQuantity : 1);
+        setExpectedOutputQuantity(typeof cur.expectedOutputQuantity === 'number' ? cur.expectedOutputQuantity : 650);
+        setChangeNote(cur.changeNote || '');
+        setNotes(cur.notes || '');
+
+        if (cur.inputUnitId) {
+          setInputUnitId(cur.inputUnitId);
+        } else if (cur.inputUnit && units.length > 0) {
+          const matched = units.find((u) => u.symbol === cur.inputUnit?.symbol || u.code === cur.inputUnit?.symbol);
+          if (matched) setInputUnitId(matched.id);
+        }
+
+        if (cur.expectedOutputUnitId) {
+          setExpectedOutputUnitId(cur.expectedOutputUnitId);
+        } else if (cur.expectedOutputUnit && units.length > 0) {
+          const matched = units.find((u) => u.symbol === cur.expectedOutputUnit?.symbol || u.code === cur.expectedOutputUnit?.symbol);
+          if (matched) setExpectedOutputUnitId(matched.id);
+        }
+
+        if (cur.ingredients && cur.ingredients.length > 0) {
+          setRecipeIngredients(
+            cur.ingredients.map((ing: any) => ({
+              ingredientId: ing.ingredientId || ing.ingredient?.id || '',
+              quantity: ing.quantity,
+              unitId: ing.unitId || (units.find((u) => u.symbol === ing.unit?.symbol)?.id ?? ''),
+              preparationNote: ing.preparationNote || '',
+              isOptional: Boolean(ing.isOptional),
+            })),
+          );
+        } else {
+          setRecipeIngredients([]);
+        }
+
+        if (cur.steps && cur.steps.length > 0) {
+          setRecipeSteps(
+            cur.steps.map((st: any) => ({
+              stepTypeId: st.stepTypeId || st.stepType?.id || '',
+              title: st.title || '',
+              instruction: st.instruction || '',
+              temperatureC: typeof st.temperatureC === 'number' ? st.temperatureC : '',
+              durationMinutes: typeof st.durationMinutes === 'number' ? st.durationMinutes : '',
+              orientationId: st.orientationId || st.orientation?.id || '',
+              notes: st.notes || '',
+            })),
+          );
+        } else {
+          setRecipeSteps([]);
+        }
+      }
+    } else if (isCreatingVersion) {
+      setChangeNote('');
+      if (initialRecipe?.currentVersion) {
+        const cur = initialRecipe.currentVersion;
+        setInputQuantity(typeof cur.inputQuantity === 'number' ? cur.inputQuantity : 1);
+        setExpectedOutputQuantity(typeof cur.expectedOutputQuantity === 'number' ? cur.expectedOutputQuantity : 650);
+        if (cur.ingredients && cur.ingredients.length > 0) {
+          setRecipeIngredients(
+            cur.ingredients.map((ing: any) => ({
+              ingredientId: ing.ingredientId || ing.ingredient?.id || '',
+              quantity: ing.quantity,
+              unitId: ing.unitId || (units.find((u) => u.symbol === ing.unit?.symbol)?.id ?? ''),
+              preparationNote: ing.preparationNote || '',
+              isOptional: Boolean(ing.isOptional),
+            })),
+          );
+        }
+        if (cur.steps && cur.steps.length > 0) {
+          setRecipeSteps(
+            cur.steps.map((st: any) => ({
+              stepTypeId: st.stepTypeId || st.stepType?.id || '',
+              title: st.title || '',
+              instruction: st.instruction || '',
+              temperatureC: typeof st.temperatureC === 'number' ? st.temperatureC : '',
+              durationMinutes: typeof st.durationMinutes === 'number' ? st.durationMinutes : '',
+              orientationId: st.orientationId || st.orientation?.id || '',
+              notes: st.notes || '',
+            })),
+          );
+        }
+      }
+    } else {
+      // Fresh create
+      setName('');
+      setCode('');
+      setDescription('');
+      setSourceUrl('');
+      setChangeNote('');
+      setInputQuantity(1);
+      setExpectedOutputQuantity(650);
+      setSelectedTagIds([]);
+      setRecipeIngredients([]);
+      setRecipeSteps([]);
+    }
+  }, [open, isEditing, isCreatingVersion, initialRecipe, units]);
+
+  // Preset initial steps if empty for fresh create
+  useEffect(() => {
+    if (open && recipeSteps.length === 0 && stepTypes.length > 0 && !isEditing && !isCreatingVersion) {
       const boil = stepTypes.find((s) => s.code === 'BOIL');
       const dry = stepTypes.find((s) => s.code === 'DRY');
       const fry = stepTypes.find((s) => s.code === 'FRY');
@@ -203,7 +317,7 @@ export function RecipeFormModal({
       }
       setRecipeSteps(initial);
     }
-  }, [open, stepTypes, lookups, recipeSteps.length, t]);
+  }, [open, stepTypes, lookups, recipeSteps.length, isEditing, isCreatingVersion, t]);
 
   const addIngredientRow = () => {
     const firstIng = ingredients[0];
@@ -292,13 +406,23 @@ export function RecipeFormModal({
         steps: payloadSteps,
       };
 
-      if (isCreatingVersion && recipeId) {
+      if (isEditing && recipeId) {
+        return http.put(`/recipes/${recipeId}`, {
+          name,
+          description: description ? description : null,
+          sourceUrl: sourceUrl ? sourceUrl : null,
+          tagIds: selectedTagIds,
+          version: initialRecipe?.version ?? 1,
+          currentVersion: versionPayload,
+        });
+      } else if (isCreatingVersion && recipeId) {
         return http.post(`/recipes/${recipeId}/versions`, versionPayload);
       } else {
         return http.post('/recipes', {
           code: code ? code : null,
           name,
           description: description ? description : null,
+          sourceUrl: sourceUrl ? sourceUrl : null,
           tagIds: selectedTagIds,
           initialVersion: versionPayload,
         });
@@ -306,7 +430,11 @@ export function RecipeFormModal({
     },
     onSuccess: () => {
       toast.success(
-        isCreatingVersion ? t('recipes.version_created') : t('recipes.recipe_created'),
+        isEditing
+          ? t('recipes.recipe_updated')
+          : isCreatingVersion
+            ? t('recipes.version_created')
+            : t('recipes.recipe_created'),
       );
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
       onOpenChange(false);
@@ -321,16 +449,28 @@ export function RecipeFormModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-orange-600" />
-            {isCreatingVersion
-              ? `${t('recipes.create_new_version')} — ${existingRecipeName}`
-              : t('recipes.create_button')}
+            {isEditing ? (
+              <>
+                <Pencil className="h-5 w-5 text-orange-600" />
+                {t('recipes.edit_title')} — {name || existingRecipeName}
+              </>
+            ) : isCreatingVersion ? (
+              <>
+                <Sparkles className="h-5 w-5 text-orange-600" />
+                {`${t('recipes.create_new_version')} — ${existingRecipeName}`}
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-5 w-5 text-orange-600" />
+                {t('recipes.create_button')}
+              </>
+            )}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-2">
-          {/* Recipe Info (if creating new recipe) */}
-          {!isCreatingVersion && (
+          {/* Recipe Info (if creating new recipe or editing existing recipe) */}
+          {(!isCreatingVersion || isEditing) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-orange-50/50 border border-orange-100">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="rec-name">
@@ -353,6 +493,7 @@ export function RecipeFormModal({
                   id="rec-code"
                   placeholder="RCP-0001"
                   value={code}
+                  disabled={isEditing}
                   onChange={(e) => setCode(e.target.value)}
                 />
               </div>
@@ -364,6 +505,20 @@ export function RecipeFormModal({
                   placeholder={t('recipes.desc_placeholder')}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+
+              {/* Source / Video Reference URL Input */}
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="rec-source-url" className="flex items-center gap-1.5 text-slate-700">
+                  <Video className="h-4 w-4 text-red-500" />
+                  <span>{t('recipes.source_url')}</span>
+                </Label>
+                <Input
+                  id="rec-source-url"
+                  placeholder={t('recipes.source_url_placeholder')}
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
                 />
               </div>
 
@@ -397,14 +552,22 @@ export function RecipeFormModal({
             </div>
           )}
 
-          {isCreatingVersion && (
+          {(isCreatingVersion || isEditing) && (
             <div className="space-y-1.5 p-4 rounded-lg bg-amber-50 border border-amber-200">
-              <Label htmlFor="change-note">{t('recipes.change_note')}</Label>
+              <Label htmlFor="change-note">
+                {t('recipes.change_note')}{' '}
+                {isEditing && (
+                  <span className="text-[11px] text-slate-500 font-normal">
+                    ({t('common.optional', 'ไม่บังคับ')})
+                  </span>
+                )}
+              </Label>
               <Input
                 id="change-note"
                 placeholder={t('recipes.change_note_placeholder')}
                 value={changeNote}
                 onChange={(e) => setChangeNote(e.target.value)}
+                className="bg-white"
               />
             </div>
           )}
@@ -729,15 +892,19 @@ export function RecipeFormModal({
           </Button>
           <Button
             onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending || (!isCreatingVersion && !name.trim())}
+            disabled={saveMutation.isPending || ((!isCreatingVersion || isEditing) && !name.trim())}
           >
             {saveMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                {t('common.loading')}
+                {t('common.saving', t('common.loading'))}
               </>
-            ) : (
+            ) : isEditing ? (
               t('common.save')
+            ) : isCreatingVersion ? (
+              t('recipes.create_new_version')
+            ) : (
+              t('recipes.create_button')
             )}
           </Button>
         </DialogFooter>
