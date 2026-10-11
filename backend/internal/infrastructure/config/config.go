@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,19 +15,23 @@ type Config struct {
 	// Server
 	AppEnv                 string        `env:"APP_ENV" envDefault:"development"`
 	HTTPPort               int           `env:"HTTP_PORT" envDefault:"8080"`
+	Port                   int           `env:"PORT" envDefault:"0"`
 	ShutdownTimeoutSeconds time.Duration `env:"SHUTDOWN_TIMEOUT_SECONDS" envDefault:"15s"`
 	LogLevel               string        `env:"LOG_LEVEL" envDefault:"info"`
 	AppTimezone            string        `env:"APP_TIMEZONE" envDefault:"Asia/Bangkok"`
 
 	// Database (PostgreSQL)
-	DBHost     string `env:"DB_HOST" envDefault:"localhost"`
-	DBPort     int    `env:"DB_PORT" envDefault:"5433"`
-	DBName     string `env:"DB_NAME" envDefault:"mookrob"`
-	DBUser     string `env:"DB_USER" envDefault:"mookrob"`
-	DBPassword string `env:"DB_PASSWORD" envDefault:"change-me-postgres"`
-	DBSSLMode  string `env:"DB_SSLMODE" envDefault:"disable"`
+	DatabaseURL string `env:"DATABASE_URL"`
+	DBHost      string `env:"DB_HOST" envDefault:"localhost"`
+	DBPort      int    `env:"DB_PORT" envDefault:"5433"`
+	DBName      string `env:"DB_NAME" envDefault:"mookrob"`
+	DBUser      string `env:"DB_USER" envDefault:"mookrob"`
+	DBPassword  string `env:"DB_PASSWORD" envDefault:"change-me-postgres"`
+	DBSSLMode   string `env:"DB_SSLMODE" envDefault:"disable"`
+	AutoMigrate bool   `env:"AUTO_MIGRATE" envDefault:"true"`
 
 	// Redis
+	RedisURL      string `env:"REDIS_URL"`
 	RedisAddr     string `env:"REDIS_ADDR" envDefault:"localhost:6379"`
 	RedisPassword string `env:"REDIS_PASSWORD" envDefault:"change-me-redis"`
 	RedisDB       int    `env:"REDIS_DB" envDefault:"0"`
@@ -90,6 +96,9 @@ type Config struct {
 }
 
 func (c *Config) DSN() string {
+	if c.DatabaseURL != "" {
+		return c.DatabaseURL
+	}
 	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName, c.DBSSLMode)
 }
@@ -100,6 +109,36 @@ func Load() (*Config, error) {
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	if cfg.Port > 0 {
+		cfg.HTTPPort = cfg.Port
+	} else if portStr := os.Getenv("PORT"); portStr != "" {
+		if p, err := strconv.Atoi(portStr); err == nil && p > 0 {
+			cfg.HTTPPort = p
+		}
+	}
+
+	// Fallback environment variable aliases
+	if cfg.DatabaseURL == "" {
+		if neonURL := os.Getenv("NEON_DATABASE_URL"); neonURL != "" {
+			cfg.DatabaseURL = neonURL
+		}
+	}
+	if cfg.MinIOAccessKey == "mookrob-app" || cfg.MinIOAccessKey == "" {
+		if r2Key := os.Getenv("R2_Access_Key_ID"); r2Key != "" {
+			cfg.MinIOAccessKey = r2Key
+		}
+	}
+	if cfg.MinIOSecretKey == "change-me-minio-app-secret" || cfg.MinIOSecretKey == "" {
+		if r2Secret := os.Getenv("R2_Secret_Key"); r2Secret != "" {
+			cfg.MinIOSecretKey = r2Secret
+		}
+	}
+	if cfg.MinIOPublicEndpoint == "http://localhost:9000" || cfg.MinIOPublicEndpoint == "" {
+		if r2Pub := os.Getenv("R2_Public_URL"); r2Pub != "" {
+			cfg.MinIOPublicEndpoint = r2Pub
+		}
 	}
 
 	if err := cfg.validate(); err != nil {
@@ -113,8 +152,8 @@ func (c *Config) validate() error {
 	if c.HTTPPort <= 0 || c.HTTPPort > 65535 {
 		return fmt.Errorf("invalid HTTP_PORT: %d", c.HTTPPort)
 	}
-	if c.DBHost == "" || c.DBName == "" || c.DBUser == "" {
-		return fmt.Errorf("DB_HOST, DB_NAME, and DB_USER must not be empty")
+	if c.DatabaseURL == "" && (c.DBHost == "" || c.DBName == "" || c.DBUser == "") {
+		return fmt.Errorf("DB_HOST, DB_NAME, and DB_USER must not be empty when DATABASE_URL is not provided")
 	}
 	if len(c.JWTSecret) < 16 {
 		return fmt.Errorf("JWT_SECRET must be at least 16 characters")

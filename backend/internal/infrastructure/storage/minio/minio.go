@@ -21,12 +21,23 @@ type Storage struct {
 }
 
 func NewStorage(cfg *config.Config) (*Storage, error) {
-	client, err := minio.New(cfg.MinIOEndpoint, &minio.Options{
+	rawEndpoint := cfg.MinIOEndpoint
+	endpoint := strings.TrimPrefix(rawEndpoint, "https://")
+	endpoint = strings.TrimPrefix(endpoint, "http://")
+	endpoint = strings.TrimRight(endpoint, "/")
+
+	useSSL := cfg.MinIOUseSSL
+	if strings.HasPrefix(rawEndpoint, "https://") || strings.Contains(endpoint, "r2.cloudflarestorage.com") {
+		useSSL = true
+	}
+
+	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.MinIOAccessKey, cfg.MinIOSecretKey, ""),
-		Secure: cfg.MinIOUseSSL,
+		Secure: useSSL,
+		Region: "auto",
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create minio client: %w", err)
+		return nil, fmt.Errorf("failed to create minio/s3 client: %w", err)
 	}
 
 	return &Storage{
@@ -40,6 +51,10 @@ func NewStorage(cfg *config.Config) (*Storage, error) {
 func (s *Storage) EnsureBucket(ctx context.Context) error {
 	exists, err := s.client.BucketExists(ctx, s.bucket)
 	if err != nil {
+		errStr := strings.ToLower(err.Error())
+		if strings.Contains(errStr, "access denied") || strings.Contains(errStr, "not implemented") {
+			return nil // Pre-created bucket on cloud providers (e.g. Cloudflare R2)
+		}
 		return fmt.Errorf("failed to check if bucket exists: %w", err)
 	}
 	if !exists {
@@ -62,6 +77,11 @@ func (s *Storage) Upload(ctx context.Context, objectKey string, reader io.Reader
 }
 
 func (s *Storage) PresignGet(ctx context.Context, objectKey string, expires time.Duration) (string, error) {
+	// If public CDN or Cloudflare R2 public bucket domain is provided
+	if s.publicURL != "" && (strings.Contains(s.publicURL, ".r2.dev") || !strings.Contains(s.publicURL, "localhost")) {
+		return fmt.Sprintf("%s/%s", strings.TrimRight(s.publicURL, "/"), objectKey), nil
+	}
+
 	reqParams := make(url.Values)
 	u, err := s.client.PresignedGetObject(ctx, s.bucket, objectKey, expires, reqParams)
 	if err != nil {

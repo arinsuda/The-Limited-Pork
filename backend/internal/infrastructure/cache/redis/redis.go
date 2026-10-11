@@ -18,11 +18,22 @@ type Client struct {
 }
 
 func NewClient(cfg *config.Config) (*Client, error) {
-	rdb := goredis.NewClient(&goredis.Options{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPassword,
-		DB:       cfg.RedisDB,
-	})
+	var opts *goredis.Options
+	if cfg.RedisURL != "" {
+		var err error
+		opts, err = goredis.ParseURL(cfg.RedisURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid REDIS_URL: %w", err)
+		}
+	} else {
+		opts = &goredis.Options{
+			Addr:     cfg.RedisAddr,
+			Password: cfg.RedisPassword,
+			DB:       cfg.RedisDB,
+		}
+	}
+
+	rdb := goredis.NewClient(opts)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

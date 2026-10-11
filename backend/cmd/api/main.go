@@ -16,6 +16,7 @@ import (
 	"github.com/mookrob/backend/internal/application/ports"
 	"github.com/mookrob/backend/internal/domain/identity"
 	"github.com/mookrob/backend/internal/infrastructure/auth"
+	memoryCache "github.com/mookrob/backend/internal/infrastructure/cache/memory"
 	redisCache "github.com/mookrob/backend/internal/infrastructure/cache/redis"
 	"github.com/mookrob/backend/internal/infrastructure/config"
 	"github.com/mookrob/backend/internal/infrastructure/persistence/postgres"
@@ -58,27 +59,46 @@ func main() {
 		slog.Error("failed to ping postgres", "error", err)
 		os.Exit(1)
 	}
-	slog.Info("connected to postgres", "host", cfg.DBHost, "port", cfg.DBPort, "database", cfg.DBName)
+	slog.Info("connected to postgres", "dsn_configured", cfg.DatabaseURL != "", "host", cfg.DBHost, "port", cfg.DBPort, "database", cfg.DBName)
 
-	// 2. Redis client
-	redisClient, err := redisCache.NewClient(cfg)
-	if err != nil {
-		slog.Error("failed to connect to redis", "error", err)
-		os.Exit(1)
+	// Auto-run DB migrations on startup if enabled
+	if cfg.AutoMigrate {
+		slog.Info("applying database migrations (auto-migrate enabled)...")
+		migrator := postgres.NewMigrator(pool)
+		if err := migrator.Up(ctx); err != nil {
+			slog.Error("auto-migration failed", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("database migrations completed successfully")
 	}
-	defer redisClient.Close()
-	slog.Info("connected to redis", "addr", cfg.RedisAddr)
 
-	// 3. MinIO Object Storage
+	// 2. Cache & PubSub (Redis or In-Memory fallback for zero-cost deployment)
+	var cacheClient ports.RedisCache
+	if cfg.RedisURL != "" || (cfg.RedisAddr != "" && cfg.RedisAddr != "memory" && cfg.RedisAddr != "none") {
+		rc, err := redisCache.NewClient(cfg)
+		if err != nil {
+			slog.Warn("failed to connect to redis, falling back to in-memory cache", "error", err)
+			cacheClient = memoryCache.NewCache()
+		} else {
+			cacheClient = rc
+			defer rc.Close()
+			slog.Info("connected to redis", "addr", cfg.RedisAddr, "url_configured", cfg.RedisURL != "")
+		}
+	} else {
+		slog.Info("using in-memory cache (zero external redis dependency)")
+		cacheClient = memoryCache.NewCache()
+	}
+
+	// 3. MinIO / S3 / Cloudflare R2 Object Storage
 	storage, err := minioStorage.NewStorage(cfg)
 	if err != nil {
-		slog.Error("failed to initialize minio client", "error", err)
+		slog.Error("failed to initialize storage client", "error", err)
 		os.Exit(1)
 	}
 	if err := storage.EnsureBucket(ctx); err != nil {
 		slog.Warn("ensure bucket failed (will retry on demand)", "bucket", cfg.MinIOBucket, "error", err)
 	} else {
-		slog.Info("connected to minio and bucket ensured", "bucket", cfg.MinIOBucket)
+		slog.Info("connected to storage and bucket ensured", "bucket", cfg.MinIOBucket)
 	}
 
 	// 4. Infrastructure & adapters
@@ -86,7 +106,7 @@ func main() {
 	idGen := system.NewUUIDGen()
 	hasher := auth.NewBcryptHasher()
 	jwtService := auth.NewJWTService(cfg, clock, idGen)
-	hub := wsHub.NewHub(cfg, redisClient)
+	hub := wsHub.NewHub(cfg, cacheClient)
 	txManager := postgres.NewTxManager(pool)
 
 	// 5. Repositories
@@ -113,7 +133,7 @@ func main() {
 	recipeService := application.NewRecipeService(recipeRepo, mdRepo, attRepo, storage, outboxDispatcher, txManager, clock, idGen, hub, cfg)
 	trialService := application.NewTrialService(trialRepo, recipeRepo, mdRepo, attRepo, storage, outboxDispatcher, txManager, clock, idGen, hub, cfg)
 	attService := application.NewAttachmentService(attRepo, storage, clock, idGen, cfg)
-	notifService := application.NewNotificationService(notifRepo, redisClient, cfg)
+	notifService := application.NewNotificationService(notifRepo, cacheClient, cfg)
 
 	// 9. HTTP Handlers
 	handlers := apiHttp.Handlers{
@@ -123,12 +143,12 @@ func main() {
 		Recipe:       handler.NewRecipeHandler(recipeService, trialService, cfg),
 		Trial:        handler.NewTrialHandler(trialService, cfg),
 		Attachment:   handler.NewAttachmentHandler(attService, cfg),
-		Notification: handler.NewNotificationHandler(notifService, hub, redisClient, cfg),
-		Ops:          handler.NewOpsHandler(pool, redisClient, storage, auditRepo, cfg),
+		Notification: handler.NewNotificationHandler(notifService, hub, cacheClient, cfg),
+		Ops:          handler.NewOpsHandler(pool, cacheClient, storage, auditRepo, cfg),
 	}
 
 	// 10. HTTP Router
-	router := apiHttp.NewRouter(cfg, jwtService, redisClient, handlers)
+	router := apiHttp.NewRouter(cfg, jwtService, cacheClient, handlers)
 
 	// 11. Run background tasks
 	go hub.Run(ctx)

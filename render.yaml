@@ -1,0 +1,50 @@
+# ==============================================================================
+# Render Blueprint Specification — หมูกรอบ มี จำกัด (The Limited Pork)
+# ==============================================================================
+version: "1"
+
+services:
+  # ----------------------------------------------------------------------------
+  # Backend API Web Service (Go Docker container)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: mookrob-api
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: singapore
+    healthCheckPath: /healthz
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: AUTO_MIGRATE
+        value: "true"
+      # Neon PostgreSQL Database Connection String
+      - key: DATABASE_URL
+        sync: false # Paste your Neon Connection String here in Render Dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SAME_SITE
+        value: None
+      - key: COOKIE_SECURE
+        value: "true"
+      # Update with your Cloudflare Pages URL once deployed
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://*.pages.dev,http://localhost:5173"
+      # Cloudflare R2 Object Storage credentials
+      - key: MINIO_ENDPOINT
+        value: "fdcbd02b62953907f96206461ae00d94.r2.cloudflarestorage.com"
+      - key: MINIO_ACCESS_KEY
+        sync: false # Paste your R2 Access Key ID in Render Dashboard
+      - key: MINIO_SECRET_KEY
+        sync: false # Paste your R2 Secret Access Key in Render Dashboard
+      - key: MINIO_BUCKET
+        value: "the-limited-pork"
+      - key: MINIO_USE_SSL
+        value: "true"
+      - key: MINIO_PUBLIC_ENDPOINT
+        value: "https://pub-400d3486a379412a8e5db8178d0762e4.r2.dev"
+      # In-Memory Cache (Free tier zero-cost without paid Redis)
+      - key: REDIS_ADDR
+        value: "memory"

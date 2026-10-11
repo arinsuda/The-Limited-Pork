@@ -91,6 +91,10 @@ fe-lint: ## Frontend lint + typecheck
 	cd frontend && npm run lint && npm run typecheck
 
 ## ---- All ----
-.PHONY: test lint
+.PHONY: dev test lint
+dev: infra-up ## Start infra and run Backend & Frontend concurrently in one terminal
+	@echo "Starting Backend & Frontend dev servers..."
+	@(trap 'kill 0' SIGINT; $(MAKE) be-dev & $(MAKE) fe-dev & wait)
+
 test: be-test fe-test ## Run all tests
 lint: be-lint fe-lint ## Run all linters
