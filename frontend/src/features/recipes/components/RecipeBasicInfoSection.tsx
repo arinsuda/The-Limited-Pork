@@ -106,7 +106,7 @@ export const RecipeBasicInfoSection = React.memo(function RecipeBasicInfoSection
         </Label>
         <Input
           id="recipe-source-url"
-          placeholder="เช่น https://www.youtube.com/watch?v=... หรือ TikTok / Facebook / เว็บไซต์"
+          placeholder={t('recipes.source_url_placeholder')}
           value={sourceUrl}
           onChange={(e) => setSourceUrl(e.target.value)}
         />

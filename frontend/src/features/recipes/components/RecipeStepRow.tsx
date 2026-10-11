@@ -131,7 +131,7 @@ export const RecipeStepRow = React.memo(function RecipeStepRow({
             <div className="space-y-1">
               <Label className="text-[11px] text-slate-500">{t('recipes.orientation')}</Label>
               <select
-                className="w-full h-8 rounded-md border border-slate-300 bg-white px-2 text-xs"
+                className="w-full h-8 rounded-md border border-slate-300 bg-white px-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                 value={step.orientationId}
                 onChange={(e) => onUpdate(index, 'orientationId', e.target.value)}
               >

@@ -147,6 +147,13 @@ func NewRouter(
 				l.With(middleware.RequirePermission("masterdata.write")).Put("/{id}", h.MasterData.UpdateLookup)
 				l.With(middleware.RequirePermission("masterdata.write")).Delete("/{id}", h.MasterData.DeleteLookup)
 			})
+			// Convenience alias for recipe tags: /tags -> /lookups?category=RECIPE_TAG
+			protected.With(middleware.RequirePermission("masterdata.read")).Get("/tags", func(w http.ResponseWriter, r *http.Request) {
+				q := r.URL.Query()
+				q.Set("category", "RECIPE_TAG")
+				r.URL.RawQuery = q.Encode()
+				h.MasterData.ListLookups(w, r)
+			})
 
 			// Master Data: Ingredients
 			protected.Route("/ingredients", func(ing chi.Router) {

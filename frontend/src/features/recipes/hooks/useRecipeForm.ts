@@ -77,8 +77,8 @@ export function useRecipeForm({
   });
 
   const { data: tags = [] } = useQuery<Tag[]>({
-    queryKey: ['masterdata', 'tags'],
-    queryFn: () => http.get('/tags'),
+    queryKey: ['masterdata', 'lookups', 'RECIPE_TAG'],
+    queryFn: () => http.get('/lookups?category=RECIPE_TAG'),
     enabled: open,
     staleTime: 5 * 60_000,
   });

@@ -79,7 +79,7 @@ export const RecipeBatchSizeSection = React.memo(function RecipeBatchSizeSection
           <div className="space-y-1 min-w-0">
             <Label className="text-xs truncate block">{t('recipes.initial_unit')}</Label>
             <select
-              className="w-full min-w-0 max-w-full h-9 rounded-md border border-slate-300 bg-white px-2 text-xs truncate"
+              className="w-full min-w-0 max-w-full h-9 rounded-md border border-slate-300 bg-white px-2 text-xs truncate focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               value={inputUnitId}
               onChange={(e) => setInputUnitId(e.target.value)}
             >
@@ -106,7 +106,7 @@ export const RecipeBatchSizeSection = React.memo(function RecipeBatchSizeSection
           <div className="space-y-1 min-w-0">
             <Label className="text-xs truncate block">{t('recipes.target_unit')}</Label>
             <select
-              className="w-full min-w-0 max-w-full h-9 rounded-md border border-slate-300 bg-white px-2 text-xs truncate"
+              className="w-full min-w-0 max-w-full h-9 rounded-md border border-slate-300 bg-white px-2 text-xs truncate focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               value={expectedOutputUnitId}
               onChange={(e) => setExpectedOutputUnitId(e.target.value)}
             >
