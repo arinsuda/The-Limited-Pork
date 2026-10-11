@@ -92,6 +92,16 @@ fe-lint: ## Frontend lint + typecheck
 
 ## ---- All ----
 .PHONY: dev dev-cloud test lint
+
+ifeq ($(OS),Windows_NT)
+dev-cloud: ## Run Backend & Frontend locally against Cloud DB (Neon + R2, zero Docker required)
+	@echo Starting Backend (Go :8080) and Frontend (Vite :5173)...
+	@powershell -NoProfile -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd backend; go run ./cmd/api'; cd frontend; npm run dev"
+
+dev: infra-up ## Start local Docker infra and run Backend & Frontend concurrently
+	@echo Starting Backend and Frontend dev servers...
+	@powershell -NoProfile -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd backend; go run ./cmd/api'; cd frontend; npm run dev"
+else
 dev-cloud: ## Run Backend & Frontend locally against Cloud DB (Neon + R2, zero Docker required)
 	@echo "Starting Backend (Go :8080) & Frontend (Vite :5173) with Cloud Database..."
 	@(trap 'kill 0' SIGINT; (cd backend && go run ./cmd/api) & (cd frontend && npm run dev) & wait)
@@ -99,6 +109,7 @@ dev-cloud: ## Run Backend & Frontend locally against Cloud DB (Neon + R2, zero D
 dev: infra-up ## Start local Docker infra and run Backend & Frontend concurrently
 	@echo "Starting Backend & Frontend dev servers..."
 	@(trap 'kill 0' SIGINT; $(MAKE) be-dev & $(MAKE) fe-dev & wait)
+endif
 
 test: be-test fe-test ## Run all tests
 lint: be-lint fe-lint ## Run all linters
