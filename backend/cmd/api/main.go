@@ -123,8 +123,8 @@ func main() {
 	// 6. Outbox Dispatcher
 	outboxDispatcher := application.NewOutboxDispatcher(pool, notifRepo, hub, clock, idGen, cfg)
 
-	// 7. Bootstrap Admin User if not exists
-	bootstrapAdmin(ctx, userRepo, roleRepo, hasher, clock, idGen)
+	// 7. Bootstrap Admin User if configured and not exists
+	bootstrapAdmin(ctx, cfg, userRepo, roleRepo, hasher, clock, idGen)
 
 	// 8. Application Services
 	authService := application.NewAuthService(userRepo, roleRepo, refreshRepo, hasher, jwtService, clock, idGen, cfg)
@@ -190,13 +190,18 @@ func main() {
 
 func bootstrapAdmin(
 	ctx context.Context,
+	cfg *config.Config,
 	userRepo identity.UserRepository,
 	roleRepo identity.RoleRepository,
 	hasher ports.PasswordHasher,
 	clock ports.Clock,
 	idGen ports.IDGen,
 ) {
-	adminEmail := "admin@mookrob.local"
+	adminEmail := cfg.BootstrapAdminEmail
+	if adminEmail == "" || cfg.BootstrapAdminPassword == "" {
+		return
+	}
+
 	existing, err := userRepo.GetByEmail(adminEmail)
 	if err == nil && existing != nil {
 		slog.Info("admin user already exists", "email", adminEmail)
@@ -222,16 +227,21 @@ func bootstrapAdmin(
 		return
 	}
 
-	hash, err := hasher.HashPassword("Admin@123456")
+	hash, err := hasher.HashPassword(cfg.BootstrapAdminPassword)
 	if err != nil {
 		slog.Error("failed to hash admin password", "error", err)
 		return
 	}
 
+	displayName := cfg.BootstrapAdminName
+	if displayName == "" {
+		displayName = "Administrator"
+	}
+
 	adminUser := &identity.User{
 		ID:           idGen.NewUUID(),
 		Email:        adminEmail,
-		DisplayName:  "Administrator",
+		DisplayName:  displayName,
 		PasswordHash: hash,
 		Locale:       "th",
 		IsActive:     true,
