@@ -66,6 +66,8 @@ func NewRouter(
 		v1.Route("/auth", func(auth chi.Router) {
 			auth.With(middleware.RateLimit(cache, cfg.RateLimitLoginPerMin, time.Minute)).
 				Post("/login", h.Auth.Login)
+			auth.With(middleware.RateLimit(cache, cfg.RateLimitLoginPerMin, time.Minute)).
+				Post("/register", h.Auth.Register)
 			auth.Post("/refresh", h.Auth.Refresh)
 
 			// Auth protected endpoints

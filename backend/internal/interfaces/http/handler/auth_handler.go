@@ -28,6 +28,35 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type RegisterRequest struct {
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	DisplayName string `json:"displayName"`
+	Locale      string `json:"locale,omitempty"`
+}
+
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	var req RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, r, apperror.BadRequest("invalid json payload"))
+		return
+	}
+
+	result, err := h.authService.Register(r.Context(), application.RegisterInput{
+		Email:       req.Email,
+		Password:    req.Password,
+		DisplayName: req.DisplayName,
+		Locale:      req.Locale,
+	})
+	if err != nil {
+		response.Error(w, r, err)
+		return
+	}
+
+	h.setRefreshCookie(w, result.RefreshToken, int(h.cfg.RefreshTokenTTLDays.Seconds()))
+	response.Created(w, result)
+}
+
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

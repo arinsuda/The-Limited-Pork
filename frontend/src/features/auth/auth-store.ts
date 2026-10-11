@@ -24,6 +24,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string, locale?: 'th' | 'en') => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   updateUserLocale: (locale: 'th' | 'en') => void;
@@ -37,6 +38,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email, password) => {
     const res = await http.post<AuthResult>('/auth/login', { email, password }, { skipAuth: true });
+    setAccessToken(res.accessToken);
+    set({ user: res.user, isAuthenticated: true, isLoading: false });
+    if (res.user.locale) {
+      setLocale(res.user.locale);
+    }
+    wsManager.connect();
+  },
+
+  register: async (email, password, displayName, locale) => {
+    const res = await http.post<AuthResult>(
+      '/auth/register',
+      { email, password, displayName, locale },
+      { skipAuth: true }
+    );
     setAccessToken(res.accessToken);
     set({ user: res.user, isAuthenticated: true, isLoading: false });
     if (res.user.locale) {

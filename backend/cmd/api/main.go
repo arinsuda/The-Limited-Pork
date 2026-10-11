@@ -127,7 +127,7 @@ func main() {
 	bootstrapAdmin(ctx, userRepo, roleRepo, hasher, clock, idGen)
 
 	// 8. Application Services
-	authService := application.NewAuthService(userRepo, refreshRepo, hasher, jwtService, clock, idGen, cfg)
+	authService := application.NewAuthService(userRepo, roleRepo, refreshRepo, hasher, jwtService, clock, idGen, cfg)
 	userService := application.NewUserService(userRepo, roleRepo, hasher, clock, idGen)
 	mdService := application.NewMasterDataService(mdRepo, clock, idGen, hub)
 	recipeService := application.NewRecipeService(recipeRepo, mdRepo, attRepo, storage, outboxDispatcher, txManager, clock, idGen, hub, cfg)

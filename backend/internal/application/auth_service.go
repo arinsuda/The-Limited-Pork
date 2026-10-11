@@ -3,6 +3,8 @@ package application
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/mookrob/backend/internal/application/ports"
@@ -13,6 +15,7 @@ import (
 
 type AuthService struct {
 	userRepo    identity.UserRepository
+	roleRepo    identity.RoleRepository
 	tokenRepo   identity.RefreshTokenRepository
 	hasher      ports.PasswordHasher
 	tokenIssuer ports.TokenIssuer
@@ -23,6 +26,7 @@ type AuthService struct {
 
 func NewAuthService(
 	userRepo identity.UserRepository,
+	roleRepo identity.RoleRepository,
 	tokenRepo identity.RefreshTokenRepository,
 	hasher ports.PasswordHasher,
 	tokenIssuer ports.TokenIssuer,
@@ -32,6 +36,7 @@ func NewAuthService(
 ) *AuthService {
 	return &AuthService{
 		userRepo:    userRepo,
+		roleRepo:    roleRepo,
 		tokenRepo:   tokenRepo,
 		hasher:      hasher,
 		tokenIssuer: tokenIssuer,
@@ -70,6 +75,92 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthR
 
 	if !s.hasher.ComparePassword(password, u.PasswordHash) {
 		return nil, apperror.InvalidCredentials("invalid email or password")
+	}
+
+	return s.createSession(ctx, u)
+}
+
+type RegisterInput struct {
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	DisplayName string `json:"displayName"`
+	Locale      string `json:"locale"`
+}
+
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+
+func (s *AuthService) Register(ctx context.Context, input RegisterInput) (*AuthResult, error) {
+	email := strings.ToLower(strings.TrimSpace(input.Email))
+	if email == "" || !emailRegex.MatchString(email) {
+		return nil, apperror.Validation("invalid email address format")
+	}
+
+	displayName := strings.TrimSpace(input.DisplayName)
+	if len(displayName) < 2 {
+		return nil, apperror.Validation("display name must be at least 2 characters long")
+	}
+	if len(displayName) > 100 {
+		return nil, apperror.Validation("display name must not exceed 100 characters")
+	}
+
+	password := input.Password
+	if len(password) < 8 {
+		return nil, apperror.Validation("password must be at least 8 characters long")
+	}
+
+	// Check if user already exists
+	existing, _ := s.userRepo.GetByEmail(email)
+	if existing != nil {
+		return nil, apperror.Duplicate("user with this email already exists")
+	}
+
+	// Hash password using Bcrypt
+	hash, err := s.hasher.HashPassword(password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Determine role: First registered user becomes OWNER, subsequent users default to COOK
+	totalUsers, _ := s.userRepo.Count()
+	var assignedRole *identity.Role
+	if totalUsers == 0 {
+		assignedRole, err = s.roleRepo.GetByCode("OWNER")
+	} else {
+		assignedRole, err = s.roleRepo.GetByCode("COOK")
+		if err != nil {
+			assignedRole, err = s.roleRepo.GetByCode("CASHIER")
+		}
+	}
+	if err != nil || assignedRole == nil {
+		roles, listErr := s.roleRepo.List()
+		if listErr == nil && len(roles) > 0 {
+			assignedRole = &roles[0]
+		} else {
+			return nil, fmt.Errorf("cannot assign role: %w", err)
+		}
+	}
+
+	locale := input.Locale
+	if locale == "" {
+		locale = "th"
+	}
+
+	now := s.clock.Now()
+	u := &identity.User{
+		ID:           s.idGen.NewUUID(),
+		Email:        email,
+		DisplayName:  displayName,
+		PasswordHash: hash,
+		Locale:       locale,
+		IsActive:     true,
+		Roles:        []identity.Role{*assignedRole},
+		Version:      1,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+
+	if err := s.userRepo.Create(u); err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return s.createSession(ctx, u)

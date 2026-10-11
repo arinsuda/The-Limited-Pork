@@ -18,6 +18,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if cfg.DatabaseURL == "" && (cfg.DBHost == "localhost" || cfg.DBHost == "127.0.0.1") && cfg.AppEnv == "production" {
+		fmt.Fprintf(os.Stderr, "[migrate] ERROR: DATABASE_URL is not configured in Render environment variables!\n")
+		fmt.Fprintf(os.Stderr, "[migrate] Please set DATABASE_URL in Render Dashboard -> Environment -> Environment Variables\n")
+		os.Exit(1)
+	}
+
+	slog.Info("starting database migration", "has_database_url", cfg.DatabaseURL != "", "host", cfg.DBHost)
+
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, cfg.DSN())
 	if err != nil {
