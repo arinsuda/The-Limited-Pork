@@ -2,8 +2,6 @@ import { useSearchParams, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowLeft,
-  GitCompare,
   Star,
   Flame,
   Clock,
@@ -26,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { formatDate } from '@/shared/lib/utils';
+import { Page, PageHeader } from '@/shared/ui/page';
 
 interface TasteAttribute {
   id: string;
@@ -146,25 +145,13 @@ export function TrialComparePage() {
   });
 
   return (
-    <div className="space-y-6">
+    <Page className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/trials')}
-          className="text-slate-500 hover:text-slate-900"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <GitCompare className="h-5 w-5 text-orange-600" />
-            {t('trials.compare_title')}
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">{t('trials.compare_subtitle')}</p>
-        </div>
-      </div>
+      <PageHeader
+        back="/trials"
+        title={t('trials.compare_title')}
+        description={t('trials.compare_subtitle')}
+      />
 
       {/* Side-by-side Radar Chart Card */}
       <Card>
@@ -173,8 +160,8 @@ export function TrialComparePage() {
             {t('trials.compare_radar_title')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="h-80 w-full">
+        <CardContent className="p-4 sm:p-6">
+          <div className="h-64 sm:h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
@@ -208,13 +195,19 @@ export function TrialComparePage() {
             {t('trials.compare_table_title')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0 overflow-x-auto scroll-x-touch">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-48">{t('trials.comparison_topic')}</TableHead>
+                <TableHead className="w-44 sm:w-48 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
+                  {t('trials.comparison_topic')}
+                </TableHead>
                 {trials.map((tr, idx) => (
-                  <TableHead key={tr.id} style={{ color: TRIAL_COLORS[idx % TRIAL_COLORS.length] }}>
+                  <TableHead
+                    key={tr.id}
+                    className="min-w-[150px]"
+                    style={{ color: TRIAL_COLORS[idx % TRIAL_COLORS.length] }}
+                  >
                     <div className="font-bold text-sm">{t('trials.trial_round', { round: tr.trialNo })}</div>
                     <div className="text-[11px] font-normal text-slate-500">
                       {tr.recipe.code} (v{tr.versionNo})
@@ -226,7 +219,9 @@ export function TrialComparePage() {
             <TableBody>
               {/* Date */}
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">{t('trials.date')}</TableCell>
+                <TableCell className="font-semibold text-xs text-slate-600 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
+                  {t('trials.date')}
+                </TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id} className="text-xs text-slate-900">
                     {formatDate(tr.trialDate, i18n.language)}
@@ -236,7 +231,9 @@ export function TrialComparePage() {
 
               {/* Outcome */}
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">{t('trials.outcome')}</TableCell>
+                <TableCell className="font-semibold text-xs text-slate-600 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
+                  {t('trials.outcome')}
+                </TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id}>
                     {tr.outcome === 'PASSED' && <Badge variant="success">{t('trials.outcome_passed')}</Badge>}
@@ -249,7 +246,7 @@ export function TrialComparePage() {
 
               {/* Overall Taste Score */}
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">
+                <TableCell className="font-semibold text-xs text-slate-600 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
                   {t('trials.overall_score_range', { min: 0, max: 5 })}
                 </TableCell>
                 {trials.map((tr) => (
@@ -264,7 +261,9 @@ export function TrialComparePage() {
 
               {/* Yield */}
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">{t('trials.actual_yield')}</TableCell>
+                <TableCell className="font-semibold text-xs text-slate-600 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
+                  {t('trials.actual_yield')}
+                </TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id} className="text-xs font-bold text-slate-800">
                     {typeof tr.actualYieldPct === 'number' ? `${tr.actualYieldPct}%` : '-'}
@@ -275,7 +274,7 @@ export function TrialComparePage() {
               {/* Individual Taste Attributes */}
               {attributes.map((attr) => (
                 <TableRow key={attr.id}>
-                  <TableCell className="font-medium text-xs text-slate-500 pl-6">
+                  <TableCell className="font-medium text-xs text-slate-500 pl-6 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
                     • {i18n.language === 'th' ? attr.nameTh : attr.nameEn}
                   </TableCell>
                   {trials.map((tr) => {
@@ -296,12 +295,14 @@ export function TrialComparePage() {
 
               {/* Frying Rounds Breakdown */}
               <TableRow className="bg-slate-50/70">
-                <TableCell colSpan={trials.length + 1} className="font-bold text-xs text-slate-800 py-2">
+                <TableCell colSpan={trials.length + 1} className="font-bold text-xs text-slate-800 py-2 sticky left-0 bg-slate-50 z-10">
                   {t('trials.actual_process')}
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-semibold text-xs text-slate-600">{t('trials.process_step_label')}</TableCell>
+                <TableCell className="font-semibold text-xs text-slate-600 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
+                  {t('trials.process_step_label')}
+                </TableCell>
                 {trials.map((tr) => (
                   <TableCell key={tr.id} className="align-top py-3">
                     <div className="space-y-2">
@@ -343,6 +344,6 @@ export function TrialComparePage() {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </Page>
   );
 }

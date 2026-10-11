@@ -59,6 +59,9 @@ func NewRouter(
 		v1.Get("/healthz", h.Ops.Healthz)
 		v1.Get("/readyz", h.Ops.Readyz)
 
+		// WebSocket upgrade on v1 as well
+		v1.Get("/ws", h.Notification.HandleWebSocket)
+
 		// Auth public endpoints
 		v1.Route("/auth", func(auth chi.Router) {
 			auth.With(middleware.RateLimit(cache, cfg.RateLimitLoginPerMin, time.Minute)).

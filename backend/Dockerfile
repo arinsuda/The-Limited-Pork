@@ -47,8 +47,9 @@ COPY --from=builder /bin/api /app/api
 COPY --from=builder /bin/migrate /app/migrate
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 
-# Ensure proper permissions for non-root execution
-RUN chmod +x /app/docker-entrypoint.sh /app/api /app/migrate && \
+# Ensure proper permissions and LF line endings for non-root execution
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
+    chmod +x /app/docker-entrypoint.sh /app/api /app/migrate && \
     chown -R appuser:appgroup /app
 
 # Run as unprivileged user

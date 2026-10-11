@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   XCircle,
   ArrowRight,
+  ImageIcon,
 } from 'lucide-react';
 import { http } from '@/shared/lib/http/client';
 import { Button } from '@/shared/ui/button';
@@ -24,6 +25,7 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import { formatDate } from '@/shared/lib/utils';
 import { TrialFormModal } from './TrialFormModal';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { Page, PageHeader, Toolbar, ChipGroup, Chip, ResponsiveGrid, EmptyState, StickyActionBar } from '@/shared/ui/page';
 
 interface TrialSummary {
   id: string;
@@ -92,28 +94,28 @@ export function TrialListPage() {
     switch (outcome) {
       case 'PASSED':
         return (
-          <Badge variant="success" className="gap-1">
+          <Badge variant="success" className="gap-1 text-[11px]">
             <CheckCircle2 className="h-3 w-3" />
             {t('trials.outcome_passed')}
           </Badge>
         );
       case 'NEEDS_ADJUSTMENT':
         return (
-          <Badge variant="warning" className="gap-1">
+          <Badge variant="warning" className="gap-1 text-[11px]">
             <AlertTriangle className="h-3 w-3" />
             {t('trials.outcome_needs_adjustment')}
           </Badge>
         );
       case 'FAILED':
         return (
-          <Badge variant="destructive" className="gap-1">
+          <Badge variant="destructive" className="gap-1 text-[11px]">
             <XCircle className="h-3 w-3" />
             {t('trials.outcome_failed')}
           </Badge>
         );
       default:
         return (
-          <Badge variant="outline" className="gap-1">
+          <Badge variant="outline" className="gap-1 text-[11px]">
             <Clock className="h-3 w-3" />
             {t('trials.outcome_pending')}
           </Badge>
@@ -130,185 +132,205 @@ export function TrialListPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <Page>
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <FlaskConical className="h-6 w-6 text-orange-600" />
-            {t('trials.title')}
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">{t('trials.subtitle')}</p>
-        </div>
+      <PageHeader
+        title={t('trials.title')}
+        subtitle={t('trials.subtitle')}
+        icon={FlaskConical}
+        actions={
+          <div className="flex items-center gap-2 max-sm:w-full">
+            {selectedTrialIds.length >= 2 && (
+              <Button
+                variant="outline"
+                onClick={handleCompare}
+                className="border-orange-500 text-orange-600 hover:bg-orange-50 font-semibold touch-target max-sm:flex-1"
+              >
+                <GitCompare className="h-4 w-4 mr-1.5" />
+                {t('trials.compare_button')} ({selectedTrialIds.length})
+              </Button>
+            )}
 
-        <div className="flex items-center gap-2">
-          {selectedTrialIds.length >= 2 && (
-            <Button
-              variant="outline"
-              onClick={handleCompare}
-              className="border-orange-500 text-orange-600 hover:bg-orange-50"
-            >
-              <GitCompare className="h-4 w-4 mr-1.5" />
-              {t('trials.compare_button')} ({selectedTrialIds.length})
-            </Button>
-          )}
+            {hasPermission('trials.write') && (
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                className="shadow-md shadow-orange-500/20 font-semibold touch-target max-sm:flex-1"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                {t('trials.create_button')}
+              </Button>
+            )}
+          </div>
+        }
+      />
 
-          {hasPermission('trials.write') && (
-            <Button onClick={() => setIsModalOpen(true)} className="shadow-md shadow-orange-500/20">
-              <Plus className="h-4 w-4 mr-1.5" />
-              {t('trials.create_button')}
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Filter and Selection Banner */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+      {/* Filters Toolbar */}
+      <Toolbar>
+        <div className="relative flex-1 w-full md:max-w-md">
+          <Search className="absolute left-3 top-3 md:top-2.5 h-4 w-4 text-slate-400" />
           <Input
             placeholder={t('common.search')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 text-xs"
+            className="pl-9 h-10 md:h-9 text-xs sm:text-sm"
           />
         </div>
 
-        {/* Outcome Filter Buttons */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+        {/* Outcome Filter Chips */}
+        <ChipGroup>
           {outcomeFilters.map((of) => (
-            <button
+            <Chip
               key={of.key}
+              shape="tab"
+              active={selectedOutcome === of.key}
               onClick={() => setSelectedOutcome(of.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
-                selectedOutcome === of.key
-                  ? 'bg-orange-600 text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
             >
               {of.label}
-            </button>
+            </Chip>
           ))}
-        </div>
-      </div>
+        </ChipGroup>
+      </Toolbar>
 
       {/* Trials Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <ResponsiveGrid preset="cards">
           {[1, 2, 3, 4, 5, 6].map((n) => (
-            <Card key={n} className="overflow-hidden border border-slate-200 bg-white space-y-0">
-              <div className="p-4 pb-2 flex items-center justify-between border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-4 w-4 rounded" />
-                  <Skeleton className="h-4 w-20" />
+            <Card key={n} className="overflow-hidden border border-slate-200 bg-white">
+              <Skeleton className="h-32 sm:h-36 w-full" />
+              <div className="p-4 space-y-3">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+                <div className="flex justify-between pt-2">
+                  <Skeleton className="h-8 w-20" />
+                  <Skeleton className="h-8 w-8" />
                 </div>
-                <Skeleton className="h-5 w-16 rounded-full" />
               </div>
-              <CardContent className="p-4 space-y-3">
-                <div className="space-y-1.5">
-                  <Skeleton className="h-3 w-28" />
-                  <Skeleton className="h-5 w-44" />
-                </div>
-                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <Skeleton className="h-8 rounded" />
-                  <Skeleton className="h-8 rounded" />
-                </div>
-                <div className="flex items-center justify-between pt-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-8 w-20 rounded-md" />
-                </div>
-              </CardContent>
             </Card>
           ))}
-        </div>
+        </ResponsiveGrid>
       ) : trials.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-300 p-8">
-          <div className="h-12 w-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-3">
-            <FlaskConical className="h-6 w-6" />
-          </div>
-          <h3 className="text-base font-semibold text-slate-900">{t('trials.empty_title')}</h3>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            {t('trials.empty_subtitle')}
-          </p>
-          {hasPermission('trials.write') && (
-            <Button onClick={() => setIsModalOpen(true)} className="mt-4" size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              {t('trials.create_button')}
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={FlaskConical}
+          title={t('common.no_data')}
+          description={selectedOutcome ? t('trials.empty_filtered') : t('trials.empty_subtitle')}
+          action={
+            hasPermission('trials.write') ? (
+              <Button onClick={() => setIsModalOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                {t('trials.create_button')}
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {trials.map((trial) => {
-            const isChecked = selectedTrialIds.includes(trial.id);
+        <ResponsiveGrid preset="cards">
+          {trials.map((tr) => {
+            const isSelected = selectedTrialIds.includes(tr.id);
             return (
               <Card
-                key={trial.id}
-                className={`overflow-hidden transition-all flex flex-col justify-between ${
-                  isChecked ? 'ring-2 ring-orange-500 shadow-md bg-orange-50/20' : 'hover:shadow-md'
+                key={tr.id}
+                className={`overflow-hidden transition-all group flex flex-col justify-between border ${
+                  isSelected
+                    ? 'border-orange-500 ring-2 ring-orange-500/20 shadow-md'
+                    : 'border-slate-200 hover:shadow-md'
                 }`}
               >
                 <div>
-                  {/* Top Bar with Checkbox and Outcome */}
-                  <div className="p-4 pb-2 flex items-start justify-between gap-2 border-b border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => handleToggleSelectTrial(trial.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                        title={t('trials.select_for_compare')}
+                  {/* Card Cover Banner */}
+                  <div className="h-32 sm:h-36 bg-gradient-to-tr from-slate-800 to-slate-700 relative flex items-center justify-center overflow-hidden">
+                    {tr.coverUrl ? (
+                      <img
+                        src={tr.coverUrl}
+                        alt={tr.title || tr.recipe.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <span className="font-bold text-sm text-slate-900 flex items-center gap-1">
-                        {t('trials.trial_round', { round: trial.trialNo })}
-                      </span>
-                    </div>
-
-                    <div>{getOutcomeBadge(trial.outcome)}</div>
-                  </div>
-
-                  {/* Body Content */}
-                  <CardContent className="p-4 space-y-3">
-                    <div>
-                      <span className="text-[11px] font-mono text-slate-400">
-                        {trial.recipe.code} (v{trial.versionNo})
-                      </span>
-                      <h3 className="font-semibold text-sm text-slate-900 line-clamp-1">
-                        {trial.recipe.name}
-                      </h3>
-                      {trial.title && (
-                        <p className="text-xs text-slate-600 mt-0.5 line-clamp-1 italic">
-                          &quot;{trial.title}&quot;
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-center">
-                      <div>
-                        <span className="text-[10px] text-slate-400 block">{t('trials.date')}</span>
-                        <span className="text-xs font-medium text-slate-700 flex items-center justify-center gap-1 mt-0.5">
-                          <Calendar className="h-3 w-3 text-slate-400" />
-                          {formatDate(trial.trialDate, i18n.language)}
+                    ) : (
+                      <div className="text-white/60 flex flex-col items-center">
+                        <FlaskConical className="h-8 sm:h-10 w-8 sm:w-10 stroke-1 mb-1 text-slate-300" />
+                        <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-300">
+                          Trial #{tr.trialNo}
                         </span>
                       </div>
+                    )}
+
+                    {/* Top Left: Checkbox for comparison & Trial # */}
+                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                      <label
+                        className="flex items-center gap-1.5 bg-black/60 backdrop-blur-xs text-white px-2 py-0.5 rounded text-[11px] font-mono font-semibold cursor-pointer select-none"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelectTrial(tr.id)}
+                          className="h-3.5 w-3.5 rounded text-orange-600 focus:ring-orange-500 accent-orange-600 cursor-pointer"
+                        />
+                        <span>#{tr.trialNo}</span>
+                      </label>
+                    </div>
+
+                    {/* Top Right: Outcome Badge */}
+                    <div className="absolute top-2.5 right-2.5">{getOutcomeBadge(tr.outcome)}</div>
+
+                    {/* Bottom Right: Photo Count Badge */}
+                    {tr.photoCount > 0 && (
+                      <div className="absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-white px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1">
+                        <ImageIcon className="h-3 w-3" />
+                        <span>{tr.photoCount}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-3.5 sm:p-4 pb-2 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <span className="font-mono font-semibold text-orange-600">{tr.recipe.code}</span>
+                      <span>•</span>
+                      <span className="truncate">{tr.recipe.name}</span>
+                      <span>•</span>
+                      <span className="text-[10px] font-semibold">v{tr.versionNo}</span>
+                    </div>
+
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-900 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                      {tr.title || `${t('trials.trial_number', { number: tr.trialNo })}`}
+                    </h3>
+
+                    <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                      <Calendar className="h-3 w-3" />
+                      <span>{formatDate(tr.trialDate, i18n.language)}</span>
+                    </div>
+                  </div>
+
+                  {/* Score & Evaluations Bar */}
+                  <CardContent className="px-3.5 sm:p-4 pb-3 sm:pb-4 pt-1">
+                    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50 border border-slate-100">
                       <div>
                         <span className="text-[10px] text-slate-400 block">{t('trials.overall_score')}</span>
-                        <span className="text-xs font-bold text-amber-600 flex items-center justify-center gap-1 mt-0.5">
-                          <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                          {typeof trial.overallScore === 'number' ? `${trial.overallScore.toFixed(2)}/5` : '-'}
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                          <span className="text-xs sm:text-sm font-bold text-amber-700">
+                            {typeof tr.overallScore === 'number' ? tr.overallScore.toFixed(1) : '-'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 block">{t('trials.evaluation_count')}</span>
+                        <span className="text-xs sm:text-sm font-bold text-slate-700 mt-0.5 block">
+                          {tr.evaluationCount}
                         </span>
                       </div>
                     </div>
                   </CardContent>
                 </div>
 
-                {/* Footer Action */}
-                <div className="p-4 pt-0">
+                {/* Card Footer */}
+                <div className="p-3.5 sm:p-4 pt-0">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate(`/trials/${trial.id}`)}
-                    className="w-full text-xs font-medium justify-between group-hover:border-orange-500 group-hover:text-orange-600"
+                    onClick={() => navigate(`/trials/${tr.id}`)}
+                    className="w-full text-xs font-medium justify-between group-hover:border-orange-500 group-hover:text-orange-600 touch-target"
                   >
                     <span>{t('common.view')}</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -317,11 +339,24 @@ export function TrialListPage() {
               </Card>
             );
           })}
-        </div>
+        </ResponsiveGrid>
       )}
 
-      {/* Record Modal */}
-      <TrialFormModal open={isModalOpen} onOpenChange={setIsModalOpen} />
-    </div>
+      {/* Floating comparison button on mobile when 2+ trials are selected */}
+      {selectedTrialIds.length >= 2 && (
+        <StickyActionBar>
+          <Button
+            onClick={handleCompare}
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-lg shadow-orange-500/30"
+          >
+            <GitCompare className="h-4 w-4 mr-2" />
+            {t('trials.compare_button')} ({selectedTrialIds.length} {t('common.items')})
+          </Button>
+        </StickyActionBar>
+      )}
+
+      {/* Create Trial Modal */}
+      <TrialFormModal open={isModalOpen} onOpenChange={setIsModalOpen} mode="create" />
+    </Page>
   );
 }

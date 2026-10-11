@@ -11,7 +11,8 @@ export const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      'inline-flex h-9 items-center justify-center rounded-lg bg-slate-100 p-1 text-slate-500',
+      // Swipeable on narrow screens; never wraps or overflows the viewport.
+      'inline-flex h-auto min-h-9 max-w-full items-center justify-start gap-1 rounded-lg bg-slate-100 p-1 text-slate-500 scroll-x-touch scrollbar-none',
       className,
     )}
     {...props}
@@ -26,7 +27,7 @@ export const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-xs cursor-pointer',
+      'touch-target inline-flex shrink-0 snap-start items-center justify-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-xs cursor-pointer',
       className,
     )}
     {...props}

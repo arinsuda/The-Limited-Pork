@@ -38,6 +38,7 @@ import {
 import { Label } from '@/shared/ui/label';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { useConfirm } from '@/shared/ui/confirm-modal';
+import { Page, PageHeader } from '@/shared/ui/page';
 import { toast } from 'sonner';
 
 export interface EquipmentItem {
@@ -329,42 +330,38 @@ export function EquipmentChecklistPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <Page className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <ClipboardCheck className="h-6 w-6 text-orange-600" />
-            {t('checklist.title')}
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 max-w-2xl">{t('checklist.subtitle')}</p>
-        </div>
+      <PageHeader
+        title={t('checklist.title')}
+        description={t('checklist.subtitle')}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {hasPermission('settings.write') && items.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearAll}
+                className="text-slate-600 hover:text-red-600 hover:bg-red-50 border-slate-200 text-xs"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                {t('checklist.clear_all')}
+              </Button>
+            )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          {hasPermission('settings.write') && items.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearAll}
-              className="text-slate-600 hover:text-red-600 hover:bg-red-50 border-slate-200 text-xs"
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1" />
-              {t('checklist.clear_all')}
-            </Button>
-          )}
-
-          {hasPermission('settings.write') && (
-            <Button
-              onClick={() => setIsAddModalOpen(true)}
-              size="sm"
-              className="shadow-md shadow-orange-500/20"
-            >
-              <Plus className="h-4 w-4 mr-1.5" />
-              {t('checklist.add_item')}
-            </Button>
-          )}
-        </div>
-      </div>
+            {hasPermission('settings.write') && (
+              <Button
+                onClick={() => setIsAddModalOpen(true)}
+                size="sm"
+                className="shadow-md shadow-orange-500/20"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                {t('checklist.add_item')}
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {/* High-Fidelity Overview Metrics & Readiness Bar */}
       {isLoading ? (
@@ -379,8 +376,8 @@ export function EquipmentChecklistPage() {
         </div>
       ) : (
         <Card className="border-slate-200 bg-gradient-to-br from-white via-white to-orange-50/30 shadow-2xs">
-          <CardContent className="p-5">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5 sm:gap-6">
               {/* Progress Bar & Rate */}
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between text-xs">
@@ -408,29 +405,29 @@ export function EquipmentChecklistPage() {
               </div>
 
               {/* Status Metric Pills */}
-              <div className="grid grid-cols-3 gap-3 min-w-[280px]">
-                <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3 text-center">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full md:w-auto">
+                <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 sm:p-3 text-center">
                   <div className="text-[11px] font-medium text-emerald-700 flex items-center justify-center gap-1">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                     {t('checklist.ready_items')}
                   </div>
-                  <div className="text-xl font-bold text-emerald-800 mt-0.5">{readyCount}</div>
+                  <div className="text-lg sm:text-xl font-bold text-emerald-800 mt-0.5">{readyCount}</div>
                 </div>
 
-                <div className="bg-sky-50/70 border border-sky-200/80 rounded-xl p-3 text-center">
+                <div className="bg-sky-50/70 border border-sky-200/80 rounded-xl p-2.5 sm:p-3 text-center">
                   <div className="text-[11px] font-medium text-sky-700 flex items-center justify-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-sky-600" />
                     {t('checklist.ordered_items')}
                   </div>
-                  <div className="text-xl font-bold text-sky-800 mt-0.5">{orderedCount}</div>
+                  <div className="text-lg sm:text-xl font-bold text-sky-800 mt-0.5">{orderedCount}</div>
                 </div>
 
-                <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 text-center">
+                <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5 sm:p-3 text-center">
                   <div className="text-[11px] font-medium text-amber-700 flex items-center justify-center gap-1">
                     <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
                     {t('checklist.needed_items')}
                   </div>
-                  <div className="text-xl font-bold text-amber-800 mt-0.5">{neededCount}</div>
+                  <div className="text-lg sm:text-xl font-bold text-amber-800 mt-0.5">{neededCount}</div>
                 </div>
               </div>
             </div>
@@ -444,20 +441,22 @@ export function EquipmentChecklistPage() {
         onValueChange={(val: any) => setActiveTab(val)}
         className="space-y-4"
       >
-        <TabsList className="bg-slate-100 p-1 flex flex-wrap h-auto gap-1">
-          <TabsTrigger value="procurement" className="text-xs py-2 px-3">
-            <Scale className="h-3.5 w-3.5 mr-1.5" />
-            {t('checklist.tabs.procurement')} ({items.length})
-          </TabsTrigger>
-          <TabsTrigger value="pre_cook" className="text-xs py-2 px-3">
-            <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-            {t('checklist.tabs.pre_cook')} ({preCookCompletedCount}/{preCookItems.length})
-          </TabsTrigger>
-          <TabsTrigger value="why_needed" className="text-xs py-2 px-3">
-            <BookOpen className="h-3.5 w-3.5 mr-1.5" />
-            {t('checklist.tabs.why_needed')}
-          </TabsTrigger>
-        </TabsList>
+        <div className="border-b border-slate-200/80 pb-1 overflow-x-auto scroll-x-touch scrollbar-none">
+          <TabsList className="inline-flex h-11 items-center justify-start rounded-xl bg-slate-100/90 p-1 text-slate-600 gap-1 border border-slate-200/70 shadow-2xs whitespace-nowrap">
+            <TabsTrigger value="procurement" className="text-xs py-2 px-3">
+              <Scale className="h-3.5 w-3.5 mr-1.5" />
+              {t('checklist.tabs.procurement')} ({items.length})
+            </TabsTrigger>
+            <TabsTrigger value="pre_cook" className="text-xs py-2 px-3">
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+              {t('checklist.tabs.pre_cook')} ({preCookCompletedCount}/{preCookItems.length})
+            </TabsTrigger>
+            <TabsTrigger value="why_needed" className="text-xs py-2 px-3">
+              <BookOpen className="h-3.5 w-3.5 mr-1.5" />
+              {t('checklist.tabs.why_needed')}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Tab 1: Procurement & Specs Checklist */}
         <TabsContent value="procurement" className="space-y-4 outline-none">
@@ -474,7 +473,7 @@ export function EquipmentChecklistPage() {
             </div>
 
             {/* Category Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex items-center gap-1 overflow-x-auto scroll-x-touch scrollbar-none pb-1 sm:pb-0">
               <button
                 onClick={() => setSelectedCategory('ALL')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
@@ -578,7 +577,7 @@ export function EquipmentChecklistPage() {
                     }`}
                   >
                     <CardHeader className="p-4 pb-2">
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="p-1 rounded bg-slate-100">
@@ -819,14 +818,14 @@ export function EquipmentChecklistPage() {
 
       {/* Add Equipment Item Dialog */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900">
               {t('checklist.add_item')}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3.5 py-2">
+          <div className="space-y-3.5 p-4 sm:p-0 sm:py-2 w-full max-w-full overflow-x-hidden">
             <div>
               <Label className="text-xs font-semibold text-slate-700">ชื่ออุปกรณ์ (ไทย)</Label>
               <Input
@@ -912,6 +911,7 @@ export function EquipmentChecklistPage() {
               variant="outline"
               size="sm"
               onClick={() => setIsAddModalOpen(false)}
+              className="max-sm:hidden"
             >
               {t('common.cancel')}
             </Button>
@@ -921,6 +921,6 @@ export function EquipmentChecklistPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Page>
   );
 }

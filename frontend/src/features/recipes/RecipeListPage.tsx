@@ -24,6 +24,7 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import { ConfirmModal } from '@/shared/ui/confirm-modal';
 import { RecipeFormModal } from './RecipeFormModal';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { Page, PageHeader, Toolbar, ChipGroup, Chip, ResponsiveGrid, EmptyState } from '@/shared/ui/page';
 import { toast } from 'sonner';
 
 interface RecipeTag {
@@ -134,93 +135,83 @@ export function RecipeListPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <Page>
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <UtensilsCrossed className="h-6 w-6 text-orange-600" />
-            {t('recipes.title')}
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">{t('recipes.subtitle')}</p>
-        </div>
+      <PageHeader
+        title={t('recipes.title')}
+        subtitle={t('recipes.subtitle')}
+        icon={UtensilsCrossed}
+        actions={
+          hasPermission('recipes.write') ? (
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              className="shadow-md shadow-orange-500/20 font-semibold touch-target"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              {t('recipes.create_button')}
+            </Button>
+          ) : undefined
+        }
+      />
 
-        {hasPermission('recipes.write') && (
-          <Button onClick={() => setIsModalOpen(true)} className="shadow-md shadow-orange-500/20">
-            <Plus className="h-4 w-4 mr-1.5" />
-            {t('recipes.create_button')}
-          </Button>
-        )}
-      </div>
-
-      {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+      {/* Filters Toolbar */}
+      <Toolbar>
+        <div className="relative flex-1 w-full md:max-w-md">
+          <Search className="absolute left-3 top-3 md:top-2.5 h-4 w-4 text-slate-400" />
           <Input
             placeholder={t('common.search')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 text-xs"
+            className="pl-9 h-10 md:h-9 text-xs sm:text-sm"
           />
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+        {/* Status Filter Chips */}
+        <ChipGroup>
           {statusFilters.map((sf) => (
-            <button
+            <Chip
               key={sf.key}
+              shape="tab"
+              active={selectedStatus === sf.key}
               onClick={() => setSelectedStatus(sf.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
-                selectedStatus === sf.key
-                  ? 'bg-orange-600 text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
             >
               {sf.label}
-            </button>
+            </Chip>
           ))}
-        </div>
-      </div>
+        </ChipGroup>
+      </Toolbar>
 
-      {/* Recipe Tag Filter Tabs */}
+      {/* Recipe Tag Filter Chips */}
       {recipeTags.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-          <span className="text-slate-400 font-medium whitespace-nowrap mr-1">
-            {t('recipes.filter_tags')}
-          </span>
-          <button
+        <ChipGroup label={t('recipes.filter_tags')}>
+          <Chip
+            shape="pill"
+            tone="dark"
+            active={selectedTagId === ''}
             onClick={() => setSelectedTagId('')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap border ${
-              selectedTagId === ''
-                ? 'bg-slate-800 text-white border-slate-800 shadow-xs'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
           >
             {t('common.all')}
-          </button>
+          </Chip>
           {recipeTags.map((tag) => (
-            <button
+            <Chip
               key={tag.id}
+              shape="pill"
+              tone="primary"
+              active={selectedTagId === tag.id}
               onClick={() => setSelectedTagId(selectedTagId === tag.id ? '' : tag.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap border ${
-                selectedTagId === tag.id
-                  ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
             >
               {i18n.language === 'th' ? tag.nameTh : tag.nameEn}
-            </button>
+            </Chip>
           ))}
-        </div>
+        </ChipGroup>
       )}
 
       {/* Recipe Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <ResponsiveGrid preset="cards">
           {[1, 2, 3, 4, 5, 6].map((n) => (
             <Card key={n} className="overflow-hidden border border-slate-200 bg-white space-y-0">
-              <div className="h-36 bg-slate-100 relative p-2.5 flex justify-between">
+              <div className="h-32 sm:h-36 bg-slate-100 relative p-2.5 flex justify-between">
                 <Skeleton className="h-5 w-16 rounded bg-slate-200" />
                 <Skeleton className="h-5 w-20 rounded-full bg-slate-200" />
               </div>
@@ -246,33 +237,31 @@ export function RecipeListPage() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </ResponsiveGrid>
       ) : recipes.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-300 p-8">
-          <div className="h-12 w-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-3">
-            <UtensilsCrossed className="h-6 w-6" />
-          </div>
-          <h3 className="text-base font-semibold text-slate-900">{t('common.no_data')}</h3>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            {selectedTagId ? t('recipes.empty_filtered') : t('recipes.empty_subtitle')}
-          </p>
-          {hasPermission('recipes.write') && (
-            <Button onClick={() => setIsModalOpen(true)} className="mt-4" size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              {t('recipes.create_button')}
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={UtensilsCrossed}
+          title={t('common.no_data')}
+          description={selectedTagId ? t('recipes.empty_filtered') : t('recipes.empty_subtitle')}
+          action={
+            hasPermission('recipes.write') ? (
+              <Button onClick={() => setIsModalOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                {t('recipes.create_button')}
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <ResponsiveGrid preset="cards">
           {recipes.map((rec) => (
             <Card
               key={rec.id}
-              className="overflow-hidden hover:shadow-md transition-shadow group flex flex-col justify-between"
+              className="overflow-hidden hover:shadow-md transition-shadow group flex flex-col justify-between border-slate-200"
             >
               <div>
                 {/* Card Cover Banner */}
-                <div className="h-36 bg-gradient-to-tr from-amber-600 to-orange-500 relative flex items-center justify-center overflow-hidden">
+                <div className="h-32 sm:h-36 bg-gradient-to-tr from-amber-600 to-orange-500 relative flex items-center justify-center overflow-hidden">
                   {rec.coverUrl ? (
                     <img
                       src={rec.coverUrl}
@@ -281,8 +270,8 @@ export function RecipeListPage() {
                     />
                   ) : (
                     <div className="text-white/80 flex flex-col items-center">
-                      <Sparkles className="h-10 w-10 stroke-1 mb-1 text-amber-200" />
-                      <span className="text-xs font-semibold tracking-wider uppercase text-amber-100">
+                      <Sparkles className="h-8 sm:h-10 w-8 sm:w-10 stroke-1 mb-1 text-amber-200" />
+                      <span className="text-[11px] font-semibold tracking-wider uppercase text-amber-100">
                         {rec.tags?.some((t) => t.code === 'DIPPING_SAUCE')
                           ? 'Dipping Sauce Formula'
                           : 'Crispy Pork Formula'}
@@ -308,8 +297,8 @@ export function RecipeListPage() {
                 </div>
 
                 {/* Card Details */}
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-base text-slate-900 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                <CardHeader className="p-3.5 sm:p-4 pb-2">
+                  <CardTitle className="text-sm sm:text-base text-slate-900 line-clamp-1 group-hover:text-orange-600 transition-colors">
                     {rec.name}
                   </CardTitle>
                   <p className="text-xs text-slate-500 line-clamp-2 min-h-[2.5rem]">
@@ -319,7 +308,7 @@ export function RecipeListPage() {
 
                 {/* Recipe Tags Badges */}
                 {rec.tags && rec.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 px-4 pb-2">
+                  <div className="flex flex-wrap gap-1 px-3.5 sm:px-4 pb-2">
                     {rec.tags.map((tag) => (
                       <Badge
                         key={tag.id}
@@ -332,8 +321,8 @@ export function RecipeListPage() {
                   </div>
                 )}
 
-                <CardContent className="px-4 pb-4 pt-1 space-y-3">
-                  <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-lg bg-slate-50 border border-slate-100 text-center">
+                <CardContent className="px-3.5 sm:px-4 pb-3 sm:pb-4 pt-1 space-y-3">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2 py-2 px-2 sm:px-3 rounded-lg bg-slate-50 border border-slate-100 text-center">
                     <div>
                       <span className="text-[10px] text-slate-400 block">{t('common.version')}</span>
                       <span className="text-xs font-bold text-slate-800 flex items-center justify-center gap-1 mt-0.5">
@@ -358,13 +347,13 @@ export function RecipeListPage() {
                 </CardContent>
               </div>
 
-              {/* Card Footer Button */}
-              <div className="p-4 pt-0 flex items-center gap-2">
+              {/* Card Footer Buttons */}
+              <div className="p-3.5 sm:p-4 pt-0 flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate(`/recipes/${rec.id}`)}
-                  className="flex-1 text-xs font-medium justify-between group-hover:border-orange-500 group-hover:text-orange-600"
+                  className="flex-1 text-xs font-medium justify-between group-hover:border-orange-500 group-hover:text-orange-600 touch-target"
                 >
                   <span>{t('common.view')}</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -378,7 +367,7 @@ export function RecipeListPage() {
                         e.stopPropagation();
                         handleOpenEdit(rec);
                       }}
-                      className="h-8 w-8 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 shrink-0"
+                      className="h-9 w-9 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 shrink-0 touch-target"
                       title={t('recipes.action_edit')}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -390,7 +379,7 @@ export function RecipeListPage() {
                         e.stopPropagation();
                         setRecipeToDelete(rec);
                       }}
-                      className="h-8 w-8 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 shrink-0"
+                      className="h-9 w-9 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 shrink-0 touch-target"
                       title={t('recipes.action_delete')}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -400,7 +389,7 @@ export function RecipeListPage() {
               </div>
             </Card>
           ))}
-        </div>
+        </ResponsiveGrid>
       )}
 
       {/* Create Modal */}
@@ -418,7 +407,7 @@ export function RecipeListPage() {
         />
       )}
 
-      {/* Reusable Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       <ConfirmModal
         open={Boolean(recipeToDelete)}
         onOpenChange={(open) => !open && setRecipeToDelete(null)}
@@ -441,6 +430,6 @@ export function RecipeListPage() {
           }
         }}
       />
-    </div>
+    </Page>
   );
 }

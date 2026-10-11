@@ -92,7 +92,7 @@ export function ConfirmModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md sm:max-w-[440px] p-6 gap-0">
+      <DialogContent mobileVariant="sheet" className="max-w-md sm:max-w-[440px] p-6 gap-0">
         <DialogHeader className="space-y-0 text-left">
           <div className="flex items-start gap-4">
             <div

@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
-      alias: { '@': path.resolve(__dirname, 'src') },
+      alias: { '@': path.resolve(import.meta.dirname, 'src') },
     },
     server: {
       port: devPort,
@@ -41,7 +41,39 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       sourcemap: mode !== 'production',
-      chunkSizeWarningLimit: 900,
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (
+                id.includes('react') ||
+                id.includes('react-dom') ||
+                id.includes('react-router')
+              ) {
+                return 'vendor-react';
+              }
+              if (id.includes('@tanstack/react-query')) {
+                return 'vendor-query';
+              }
+              if (id.includes('recharts')) {
+                return 'vendor-charts';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-icons';
+              }
+              if (
+                id.includes('@radix-ui') ||
+                id.includes('cmdk') ||
+                id.includes('sonner')
+              ) {
+                return 'vendor-ui';
+              }
+              return 'vendor-libs';
+            }
+          },
+        },
+      },
     },
     test: {
       globals: true,

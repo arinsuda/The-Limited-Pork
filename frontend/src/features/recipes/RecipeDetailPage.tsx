@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowLeft,
   Plus,
   Flame,
   Clock,
@@ -87,6 +86,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/shared/ui/skeleton';
 import { ConfirmModal } from '@/shared/ui/confirm-modal';
 import { formatDateTime } from '@/shared/lib/utils';
+import { Page, PageHeader } from '@/shared/ui/page';
+import { ResponsiveActions, type ResponsiveActionItem } from '@/shared/ui/responsive-actions';
 import { RecipeFormModal } from './RecipeFormModal';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { toast } from 'sonner';
@@ -338,37 +339,90 @@ export function RecipeDetailPage() {
       ? Number(((current.expectedOutputQuantity / current.inputQuantity) * 100).toFixed(1))
       : null;
 
+  const actions: ResponsiveActionItem[] = [
+    ...(hasPermission('recipes.write')
+      ? [
+          {
+            key: 'edit',
+            label: t('recipes.action_edit'),
+            icon: Pencil,
+            variant: 'outline' as const,
+            onClick: () => setIsEditModalOpen(true),
+            priority: 'high' as const,
+          },
+        ]
+      : []),
+    ...(hasPermission('recipes.write') && recipe.status === 'DRAFT'
+      ? [
+          {
+            key: 'mark_testing',
+            label: t('recipes.action_mark_testing'),
+            icon: FlaskConical,
+            variant: 'outline' as const,
+            onClick: () => statusMutation.mutate('TESTING'),
+            disabled: statusMutation.isPending,
+            priority: 'high' as const,
+          },
+        ]
+      : []),
+    ...(hasPermission('recipes.approve') && recipe.status === 'TESTING'
+      ? [
+          {
+            key: 'approve',
+            label: t('recipes.action_approve'),
+            icon: CheckCircle2,
+            variant: 'outline' as const,
+            onClick: () => statusMutation.mutate('APPROVED'),
+            disabled: statusMutation.isPending,
+            priority: 'high' as const,
+          },
+        ]
+      : []),
+    ...(hasPermission('recipes.write')
+      ? [
+          {
+            key: 'new_version',
+            label: t('recipes.create_new_version'),
+            icon: Plus,
+            onClick: () => setIsVersionModalOpen(true),
+            priority: 'high' as const,
+          },
+          {
+            key: 'delete',
+            label: t('recipes.action_delete'),
+            icon: Trash2,
+            variant: 'destructive' as const,
+            onClick: () => setIsDeleteDialogOpen(true),
+            priority: 'low' as const,
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Top Breadcrumb & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/recipes')}
-            className="text-slate-500 hover:text-slate-900"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-800">
-                {recipe.code}
-              </span>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">{recipe.name}</h1>
-              <Badge
-                variant={
-                  recipe.status === 'APPROVED'
-                    ? 'success'
-                    : recipe.status === 'TESTING'
-                      ? 'warning'
-                      : 'outline'
-                }
-              >
-                {t(`recipes.status_${recipe.status.toLowerCase()}`)}
-              </Badge>
-              {recipe.tags && recipe.tags.map((tag) => (
+    <Page className="space-y-6">
+      {/* Top Header & Actions */}
+      <PageHeader
+        back="/recipes"
+        title={recipe.name}
+        badge={
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-800">
+              {recipe.code}
+            </span>
+            <Badge
+              variant={
+                recipe.status === 'APPROVED'
+                  ? 'success'
+                  : recipe.status === 'TESTING'
+                    ? 'warning'
+                    : 'outline'
+              }
+            >
+              {t(`recipes.status_${recipe.status.toLowerCase()}`)}
+            </Badge>
+            {recipe.tags &&
+              recipe.tags.map((tag) => (
                 <Badge
                   key={tag.id}
                   variant="secondary"
@@ -377,14 +431,13 @@ export function RecipeDetailPage() {
                   {i18n.language === 'th' ? tag.nameTh : tag.nameEn}
                 </Badge>
               ))}
-            </div>
-            {recipe.description && (
-              <p className="text-xs text-slate-500 mt-1">{recipe.description}</p>
-            )}
-
-            {/* Source Reference Link */}
+          </div>
+        }
+        description={
+          <div>
+            {recipe.description && <p>{recipe.description}</p>}
             {recipe.sourceUrl && (
-              <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
                 <a
                   href={recipe.sourceUrl}
                   target="_blank"
@@ -401,72 +454,9 @@ export function RecipeDetailPage() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          {/* Edit Recipe Button */}
-          {hasPermission('recipes.write') && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditModalOpen(true)}
-              className="text-xs text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
-            >
-              <Pencil className="h-3.5 w-3.5 mr-1" />
-              {t('recipes.action_edit')}
-            </Button>
-          )}
-
-          {/* Status Transitions */}
-          {hasPermission('recipes.write') && recipe.status === 'DRAFT' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => statusMutation.mutate('TESTING')}
-              disabled={statusMutation.isPending}
-              className="text-xs text-amber-600 border-amber-300 hover:bg-amber-50"
-            >
-              <FlaskConical className="h-3.5 w-3.5 mr-1" />
-              {t('recipes.action_mark_testing')}
-            </Button>
-          )}
-
-          {hasPermission('recipes.approve') && recipe.status === 'TESTING' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => statusMutation.mutate('APPROVED')}
-              disabled={statusMutation.isPending}
-              className="text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-              {t('recipes.action_approve')}
-            </Button>
-          )}
-
-          {/* Delete Recipe Button */}
-          {hasPermission('recipes.write') && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              className="text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1 text-red-500" />
-              {t('recipes.action_delete')}
-            </Button>
-          )}
-
-          {/* New Version Button */}
-          {hasPermission('recipes.write') && (
-            <Button size="sm" onClick={() => setIsVersionModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              {t('recipes.create_new_version')}
-            </Button>
-          )}
-        </div>
-      </div>
+        }
+        actions={<ResponsiveActions items={actions} collapseAt="md" />}
+      />
 
       {/* YouTube Video Embed Preview if sourceUrl is YouTube */}
       {recipe.sourceUrl && getYouTubeEmbedUrl(recipe.sourceUrl) && (
@@ -504,8 +494,8 @@ export function RecipeDetailPage() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="steps" className="space-y-6">
-        <div className="border-b border-slate-200/80 pb-1">
-          <TabsList className="inline-flex h-11 items-center justify-start rounded-xl bg-slate-100/90 p-1 text-slate-600 gap-1 border border-slate-200/70 shadow-2xs">
+        <div className="border-b border-slate-200/80 pb-1 overflow-x-auto scroll-x-touch scrollbar-none">
+          <TabsList className="inline-flex h-11 items-center justify-start rounded-xl bg-slate-100/90 p-1 text-slate-600 gap-1 border border-slate-200/70 shadow-2xs whitespace-nowrap">
             <TabsTrigger
               value="steps"
               className="text-xs sm:text-sm font-medium px-4 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-xs transition-all cursor-pointer flex items-center gap-2"
@@ -533,7 +523,14 @@ export function RecipeDetailPage() {
         {/* Tab 1: Current Version Details & Process Steps */}
         <TabsContent value="steps" className="space-y-6">
           {/* Yield & Target Metrics Banner */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {!current?.inputQuantity && (
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-900 text-xs font-medium">
+              <Info className="h-4 w-4 text-amber-600 shrink-0" />
+              <span>{t('recipes.unspecified_yield_banner')}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4">
             <Card className="overflow-hidden border border-amber-200/80 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent shadow-xs">
               <CardContent className="p-4 flex items-center gap-3.5">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white flex items-center justify-center font-bold text-lg shadow-sm shadow-orange-500/30 shrink-0">
@@ -544,11 +541,17 @@ export function RecipeDetailPage() {
                     {t('recipes.expected_yield')}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {yieldPct !== null ? `${yieldPct}%` : '-'}
-                    </span>
-                    {yieldPct !== null && (
-                      <span className="text-[11px] text-amber-700 font-medium">{t('recipes.target_metric')}</span>
+                    {yieldPct !== null ? (
+                      <>
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {yieldPct}%
+                        </span>
+                        <span className="text-[11px] text-amber-700 font-medium">{t('recipes.target_metric')}</span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-semibold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded border border-amber-200">
+                        {t('recipes.unspecified_quantity')}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -565,12 +568,20 @@ export function RecipeDetailPage() {
                     {t('recipes.input_quantity')}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {current?.inputQuantity ?? '-'}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-500">
-                      {current?.inputUnit?.symbol ?? ''}
-                    </span>
+                    {current?.inputQuantity ? (
+                      <>
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {current.inputQuantity}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-500">
+                          {current?.inputUnit?.symbol ?? ''}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-semibold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded border border-amber-200">
+                        {t('recipes.unspecified_quantity')}
+                      </span>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -586,16 +597,20 @@ export function RecipeDetailPage() {
                     {t('recipes.expected_output')}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {current?.expectedOutputQuantity && current.expectedOutputQuantity > 0
-                        ? current.expectedOutputQuantity
-                        : '-'}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-500">
-                      {current?.expectedOutputQuantity && current.expectedOutputQuantity > 0
-                        ? (current?.expectedOutputUnit?.symbol ?? '')
-                        : ''}
-                    </span>
+                    {current?.expectedOutputQuantity && current.expectedOutputQuantity > 0 ? (
+                      <>
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {current.expectedOutputQuantity}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-500">
+                          {current?.expectedOutputUnit?.symbol ?? ''}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-semibold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded border border-amber-200">
+                        {t('recipes.unspecified_quantity')}
+                      </span>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -624,7 +639,7 @@ export function RecipeDetailPage() {
                   {t('recipes.no_ingredients')}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto scroll-x-touch">
                   <Table>
                     <TableHeader className="bg-slate-50/80">
                       <TableRow className="border-b border-slate-200/80">
@@ -818,66 +833,68 @@ export function RecipeDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-24">{t('common.version')}</TableHead>
-                    <TableHead>{t('recipes.change_note')}</TableHead>
-                    <TableHead>{t('recipes.steps_and_ingredients')}</TableHead>
-                    <TableHead>{t('common.created_at')}</TableHead>
-                    <TableHead className="w-28 text-right">{t('common.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {versions.map((v) => {
-                    const isCurrent = v.versionNo === current?.versionNo;
-                    return (
-                      <TableRow key={v.id} className={isCurrent ? 'bg-orange-50/40' : ''}>
-                        <TableCell className="font-bold text-sm text-slate-900 font-mono">
-                          v{v.versionNo}
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-700">
-                          {v.changeNote || '-'}
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-500">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <Badge variant="outline" className="text-[11px] font-medium bg-slate-50 border-slate-200">
-                              {t('recipes.steps_count', { count: v.stepCount ?? 0 })}
-                            </Badge>
-                            <Badge variant="outline" className="text-[11px] font-medium bg-slate-50 border-slate-200">
-                              {t('recipes.ingredients_count', { count: v.ingredientCount ?? 0 })}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-400 whitespace-nowrap">
-                          {formatDateTime(v.createdAt, i18n.language)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {isCurrent ? (
-                            <Badge variant="success" className="text-xs font-semibold whitespace-nowrap inline-flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              {t('recipes.current_active')}
-                            </Badge>
-                          ) : (
-                            hasPermission('recipes.write') && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => restoreMutation.mutate(v.id)}
-                                disabled={restoreMutation.isPending}
-                                className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                              >
-                                <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                                {t('recipes.action_restore')}
-                              </Button>
-                            )
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto scroll-x-touch">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-24">{t('common.version')}</TableHead>
+                      <TableHead>{t('recipes.change_note')}</TableHead>
+                      <TableHead>{t('recipes.steps_and_ingredients')}</TableHead>
+                      <TableHead>{t('common.created_at')}</TableHead>
+                      <TableHead className="w-28 text-right">{t('common.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {versions.map((v) => {
+                      const isCurrent = v.versionNo === current?.versionNo;
+                      return (
+                        <TableRow key={v.id} className={isCurrent ? 'bg-orange-50/40' : ''}>
+                          <TableCell className="font-bold text-sm text-slate-900 font-mono">
+                            v{v.versionNo}
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-700">
+                            {v.changeNote || '-'}
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-500">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Badge variant="outline" className="text-[11px] font-medium bg-slate-50 border-slate-200">
+                                {t('recipes.steps_count', { count: v.stepCount ?? 0 })}
+                              </Badge>
+                              <Badge variant="outline" className="text-[11px] font-medium bg-slate-50 border-slate-200">
+                                {t('recipes.ingredients_count', { count: v.ingredientCount ?? 0 })}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-400 whitespace-nowrap">
+                            {formatDateTime(v.createdAt, i18n.language)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isCurrent ? (
+                              <Badge variant="success" className="text-xs font-semibold whitespace-nowrap inline-flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                {t('recipes.current_active')}
+                              </Badge>
+                            ) : (
+                              hasPermission('recipes.write') && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => restoreMutation.mutate(v.id)}
+                                  disabled={restoreMutation.isPending}
+                                  className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                                  {t('recipes.action_restore')}
+                                </Button>
+                              )
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -964,6 +981,6 @@ export function RecipeDetailPage() {
         isLoading={deleteMutation.isPending}
         onConfirm={() => deleteMutation.mutate()}
       />
-    </div>
+    </Page>
   );
 }

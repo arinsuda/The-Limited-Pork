@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/shared/ui/dialog';
+import { StepAutocompleteInput } from '@/features/recipes/components/StepAutocompleteInput';
 import { toast } from 'sonner';
 
 interface RecipeOption {
@@ -62,6 +63,7 @@ interface TrialFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultRecipeId?: string;
+  mode?: string;
 }
 
 export function TrialFormModal({
@@ -210,16 +212,59 @@ export function TrialFormModal({
   // Submit
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payloadSteps = trialSteps.map((s) => ({
-        stepTypeId: s.stepTypeId,
-        title: s.title ? s.title : null,
-        instruction: s.instruction ? s.instruction : null,
-        temperatureC: s.temperatureC !== '' ? Number(s.temperatureC) : null,
-        durationMinutes: s.durationMinutes !== '' ? Number(s.durationMinutes) : null,
-        orientationId: s.orientationId ? s.orientationId : null,
-        params: {},
-        notes: s.notes ? s.notes : null,
-      }));
+      let hasCreatedNewStepType = false;
+      const payloadSteps = await Promise.all(
+        trialSteps.map(async (s, idx) => {
+          let stepTypeId = s.stepTypeId;
+
+          const existingById = stepTypes.find((st) => st.id === stepTypeId);
+          if (!existingById && s.title && s.title.trim()) {
+            const trimmedTitle = s.title.trim();
+            const existingByName = stepTypes.find(
+              (st) =>
+                (st.nameTh || '').trim().toLowerCase() === trimmedTitle.toLowerCase() ||
+                (st.nameEn || '').trim().toLowerCase() === trimmedTitle.toLowerCase(),
+            );
+
+            if (existingByName) {
+              stepTypeId = existingByName.id;
+            } else {
+              try {
+                const created = await http.post<StepType>('/process-step-types', {
+                  code: `STEP_${Date.now().toString(36).toUpperCase()}_${idx}`,
+                  nameTh: trimmedTitle,
+                  nameEn: trimmedTitle,
+                  usesTemperature: true,
+                  usesDuration: true,
+                  usesOrientation: false,
+                  isRepeatable: false,
+                });
+                stepTypeId = created.id;
+                hasCreatedNewStepType = true;
+              } catch {
+                stepTypeId = stepTypes[0]?.id || '';
+              }
+            }
+          } else if (!existingById) {
+            stepTypeId = stepTypes[0]?.id || '';
+          }
+
+          return {
+            stepTypeId,
+            title: s.title ? s.title : null,
+            instruction: s.instruction ? s.instruction : null,
+            temperatureC: s.temperatureC !== '' ? Number(s.temperatureC) : null,
+            durationMinutes: s.durationMinutes !== '' ? Number(s.durationMinutes) : null,
+            orientationId: s.orientationId ? s.orientationId : null,
+            params: {},
+            notes: s.notes ? s.notes : null,
+          };
+        }),
+      );
+
+      if (hasCreatedNewStepType) {
+        queryClient.invalidateQueries({ queryKey: ['masterdata', 'step-types'] });
+      }
 
       return http.post('/trials', {
         recipeId,
@@ -253,7 +298,7 @@ export function TrialFormModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FlaskConical className="h-5 w-5 text-orange-600" />
@@ -261,7 +306,7 @@ export function TrialFormModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-2">
+        <div className="space-y-6 p-4 sm:p-0 sm:py-2 w-full max-w-full overflow-x-hidden">
           {/* Recipe and Date Selection */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-lg bg-orange-50/50 border border-orange-100">
             <div className="space-y-1.5 sm:col-span-2">
@@ -411,28 +456,38 @@ export function TrialFormModal({
                     className="p-3.5 rounded-lg border border-slate-200 bg-white shadow-2xs space-y-3"
                   >
                     <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-600 text-[10px] font-bold text-white">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-600 text-[10px] font-bold text-white shrink-0">
                           {idx + 1}
                         </span>
-                        <select
-                          className="h-8 rounded border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-900"
-                          value={step.stepTypeId}
-                          onChange={(e) => {
-                            const newTypeId = e.target.value;
+                        <StepAutocompleteInput
+                          value={step.title}
+                          stepTypeId={step.stepTypeId}
+                          stepTypes={stepTypes}
+                          onChange={(newTitle, newTypeId, selectedType) => {
+                            const stItem =
+                              selectedType || stepTypes.find((s) => s.id === newTypeId);
                             setTrialSteps((prev) =>
-                              prev.map((s, i) => (i === idx ? { ...s, stepTypeId: newTypeId } : s)),
+                              prev.map((s, i) =>
+                                i === idx
+                                  ? {
+                                      ...s,
+                                      title: newTitle,
+                                      stepTypeId: newTypeId || s.stepTypeId,
+                                      temperatureC: stItem?.usesTemperature
+                                        ? s.temperatureC || 180
+                                        : '',
+                                      durationMinutes: stItem?.usesDuration
+                                        ? s.durationMinutes || 10
+                                        : '',
+                                    }
+                                  : s,
+                              ),
                             );
                           }}
-                        >
-                          {stepTypes.map((stItem) => (
-                            <option key={stItem.id} value={stItem.id}>
-                              {i18n.language === 'th' ? stItem.nameTh : stItem.nameEn}
-                            </option>
-                          ))}
-                        </select>
+                        />
                         {roundLabel && (
-                          <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
+                          <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200 shrink-0">
                             {roundLabel}
                           </span>
                         )}
@@ -443,26 +498,13 @@ export function TrialFormModal({
                         variant="ghost"
                         size="icon"
                         onClick={() => removeStepRow(idx)}
-                        className="h-7 w-7 text-red-500 hover:text-red-700"
+                        className="h-7 w-7 text-red-500 hover:text-red-700 shrink-0 cursor-pointer"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="sm:col-span-3">
-                        <Input
-                          placeholder={t('trials.step_title_placeholder')}
-                          className="h-8 text-xs"
-                          value={step.title}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setTrialSteps((prev) =>
-                              prev.map((s, i) => (i === idx ? { ...s, title: val } : s)),
-                            );
-                          }}
-                        />
-                      </div>
 
                       {st?.usesTemperature && (
                         <div className="space-y-1">
@@ -561,8 +603,8 @@ export function TrialFormModal({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 pt-2 border-t border-slate-100">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="gap-2 sm:pt-2 sm:border-t sm:border-slate-100">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="max-sm:hidden">
             {t('common.cancel')}
           </Button>
           <Button

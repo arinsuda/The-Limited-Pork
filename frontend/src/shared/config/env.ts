@@ -137,9 +137,14 @@ export function resolveWsUrl(
 ): string {
   if (wsUrl) return wsUrl;
   if (/^https?:\/\//i.test(apiBaseUrl)) {
-    return `${apiBaseUrl.replace(/^http/i, 'ws')}/ws`;
+    try {
+      const parsed = new URL(apiBaseUrl);
+      const scheme = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${scheme}//${parsed.host}/ws`;
+    } catch {
+      return `${apiBaseUrl.replace(/^http/i, 'ws')}/ws`;
+    }
   }
   const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-  const path = apiBaseUrl.startsWith('/') ? apiBaseUrl : `/${apiBaseUrl}`;
-  return `${scheme}://${location.host}${path}/ws`;
+  return `${scheme}://${location.host}/ws`;
 }

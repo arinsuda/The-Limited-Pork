@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  Database,
   Scale,
   Sparkles,
   Workflow,
@@ -17,9 +16,7 @@ import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Badge } from '@/shared/ui/badge';
-import { Card, CardContent } from '@/shared/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -27,25 +24,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/shared/ui/dialog';
+import { Page, PageHeader } from '@/shared/ui/page';
+import { DataTable, type DataColumn } from '@/shared/ui/data-table';
 import { useAuthStore } from '@/features/auth/auth-store';
-import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from 'sonner';
-
-function TableSkeletonRows({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
-  return (
-    <>
-      {Array.from({ length: rows }).map((_, r) => (
-        <TableRow key={r}>
-          {Array.from({ length: cols }).map((_, c) => (
-            <TableCell key={c}>
-              <Skeleton className="h-4 w-full" />
-            </TableCell>
-          ))}
-        </TableRow>
-      ))}
-    </>
-  );
-}
 
 export function MasterDataPage() {
   const { t, i18n } = useTranslation();
@@ -109,374 +91,422 @@ export function MasterDataPage() {
     },
   });
 
+  // Units Columns
+  const unitColumns: DataColumn<any>[] = [
+    {
+      key: 'code',
+      header: t('masterdata.unit_code'),
+      cell: (u) => <span className="font-mono text-xs font-bold text-slate-800">{u.code}</span>,
+      mobile: 'badge',
+    },
+    {
+      key: 'name',
+      header: t('masterdata.name_th_en'),
+      cell: (u) => (
+        <div>
+          <span className="font-semibold text-xs text-slate-900">{u.nameTh}</span>
+          <span className="text-xs text-slate-500 ml-1">({u.nameEn})</span>
+        </div>
+      ),
+      mobile: 'title',
+    },
+    {
+      key: 'symbol',
+      header: t('masterdata.unit_symbol'),
+      cell: (u) => <span className="font-bold text-xs text-orange-600">{u.symbol}</span>,
+      mobile: 'subtitle',
+    },
+    {
+      key: 'dimension',
+      header: t('masterdata.unit_dimension'),
+      cell: (u) => <Badge variant="outline">{u.dimension}</Badge>,
+      mobile: 'field',
+    },
+    {
+      key: 'factorToBase',
+      header: t('masterdata.factor_to_base'),
+      cell: (u) => <span className="text-xs text-slate-600">{u.factorToBase}</span>,
+      mobile: 'field',
+    },
+    {
+      key: 'status',
+      header: t('common.status'),
+      className: 'w-20 text-center',
+      cell: (u) =>
+        u.isActive ? (
+          <Badge variant="success" className="text-[10px]">
+            {t('masterdata.status_active')}
+          </Badge>
+        ) : (
+          <Badge variant="secondary" className="text-[10px]">
+            {t('masterdata.status_inactive')}
+          </Badge>
+        ),
+      mobile: 'field',
+    },
+  ];
+
+  // Taste Attributes Columns
+  const tasteColumns: DataColumn<any>[] = [
+    {
+      key: 'code',
+      header: t('masterdata.attribute_code'),
+      cell: (ta) => <span className="font-mono text-xs font-bold text-slate-800">{ta.code}</span>,
+      mobile: 'badge',
+    },
+    {
+      key: 'name',
+      header: t('masterdata.attribute_name'),
+      cell: (ta) => (
+        <span className="text-xs font-medium text-slate-900">
+          {ta.nameTh} ({ta.nameEn})
+        </span>
+      ),
+      mobile: 'title',
+    },
+    {
+      key: 'scoreRange',
+      header: t('masterdata.score_range'),
+      cell: (ta) => (
+        <span className="text-xs text-slate-600 font-mono">
+          {ta.minScore} - {ta.maxScore}
+        </span>
+      ),
+      mobile: 'field',
+    },
+    {
+      key: 'color',
+      header: t('masterdata.color'),
+      cell: (ta) => (
+        <div className="flex items-center gap-1.5 text-xs font-mono">
+          <span
+            className="inline-block h-3.5 w-3.5 rounded-full border border-slate-300 shrink-0"
+            style={{ backgroundColor: ta.color }}
+          />
+          {ta.color}
+        </div>
+      ),
+      mobile: 'field',
+    },
+    {
+      key: 'status',
+      header: t('common.status'),
+      className: 'w-20 text-center',
+      cell: (ta) =>
+        ta.isActive ? (
+          <Badge variant="success" className="text-[10px]">
+            {t('masterdata.status_active')}
+          </Badge>
+        ) : (
+          <Badge variant="secondary" className="text-[10px]">
+            {t('masterdata.status_inactive')}
+          </Badge>
+        ),
+      mobile: 'field',
+    },
+  ];
+
+  // Step Types Columns
+  const stepColumns: DataColumn<any>[] = [
+    {
+      key: 'code',
+      header: t('masterdata.step_code'),
+      cell: (st) => <span className="font-mono text-xs font-bold text-slate-800">{st.code}</span>,
+      mobile: 'badge',
+    },
+    {
+      key: 'name',
+      header: t('masterdata.step_type_name'),
+      cell: (st) => (
+        <span className="text-xs font-semibold text-slate-900">
+          {st.nameTh} ({st.nameEn})
+        </span>
+      ),
+      mobile: 'title',
+    },
+    {
+      key: 'temperature',
+      header: t('recipes.temperature'),
+      cell: (st) =>
+        st.usesTemperature ? (
+          <Check className="h-4 w-4 text-emerald-600" />
+        ) : (
+          <X className="h-4 w-4 text-slate-300" />
+        ),
+      mobile: 'field',
+    },
+    {
+      key: 'duration',
+      header: t('recipes.duration'),
+      cell: (st) =>
+        st.usesDuration ? (
+          <Check className="h-4 w-4 text-emerald-600" />
+        ) : (
+          <X className="h-4 w-4 text-slate-300" />
+        ),
+      mobile: 'field',
+    },
+    {
+      key: 'orientation',
+      header: t('recipes.orientation'),
+      cell: (st) =>
+        st.usesOrientation ? (
+          <Check className="h-4 w-4 text-emerald-600" />
+        ) : (
+          <X className="h-4 w-4 text-slate-300" />
+        ),
+      mobile: 'field',
+    },
+    {
+      key: 'repeatable',
+      header: t('masterdata.repeatable_label'),
+      cell: (st) =>
+        st.isRepeatable ? (
+          <Badge variant="warning" className="text-[10px]">
+            {t('masterdata.repeatable_badge')}
+          </Badge>
+        ) : (
+          <span className="text-slate-300 text-xs">-</span>
+        ),
+      mobile: 'field',
+    },
+  ];
+
+  // Lookups Columns
+  const lookupColumns: DataColumn<any>[] = [
+    {
+      key: 'code',
+      header: t('masterdata.lookup_code'),
+      cell: (l) => <span className="font-mono text-xs font-semibold text-slate-800">{l.code}</span>,
+      mobile: 'badge',
+    },
+    {
+      key: 'name',
+      header: t('masterdata.name_th_en'),
+      cell: (l) => (
+        <span className="text-xs font-medium text-slate-800">
+          {l.nameTh} / {l.nameEn}
+        </span>
+      ),
+      mobile: 'title',
+    },
+    {
+      key: 'category',
+      header: t('masterdata.lookup_category'),
+      cell: (l) => <Badge variant="outline" className="text-[11px] font-bold text-slate-600">{l.category}</Badge>,
+      mobile: 'subtitle',
+    },
+    {
+      key: 'status',
+      header: t('common.status'),
+      className: 'w-20 text-center',
+      cell: (l) =>
+        l.isActive ? (
+          <Badge variant="success" className="text-[10px]">
+            {t('masterdata.status_active')}
+          </Badge>
+        ) : (
+          <Badge variant="secondary" className="text-[10px]">
+            {t('masterdata.status_inactive')}
+          </Badge>
+        ),
+      mobile: 'field',
+    },
+  ];
+
+  // Ingredients Columns
+  const ingredientColumns: DataColumn<any>[] = [
+    {
+      key: 'code',
+      header: t('masterdata.ingredient_code'),
+      cell: (ing) => <span className="font-mono text-xs font-bold text-slate-800">{ing.code}</span>,
+      mobile: 'badge',
+    },
+    {
+      key: 'name',
+      header: t('masterdata.ingredient_name'),
+      cell: (ing) => (
+        <span className="text-xs font-semibold text-slate-900">
+          {ing.nameTh} ({ing.nameEn})
+        </span>
+      ),
+      mobile: 'title',
+    },
+    {
+      key: 'unit',
+      header: t('masterdata.standard_unit'),
+      cell: (ing) => <span className="text-xs text-orange-600 font-bold">{ing.defaultUnit?.symbol}</span>,
+      mobile: 'field',
+    },
+    {
+      key: 'notes',
+      header: t('masterdata.prep_notes'),
+      cell: (ing) => <span className="text-xs text-slate-500">{ing.notes || '-'}</span>,
+      mobile: 'field',
+    },
+  ];
+
+  // Settings Columns
+  const settingColumns: DataColumn<any>[] = [
+    {
+      key: 'key',
+      header: t('masterdata.setting_key'),
+      cell: (s) => <span className="font-mono text-xs font-bold text-slate-800">{s.key}</span>,
+      mobile: 'title',
+    },
+    {
+      key: 'description',
+      header: t('masterdata.description'),
+      cell: (s) => (
+        <span className="text-xs text-slate-600">
+          {i18n.language === 'th' ? s.descriptionTh : s.descriptionEn}
+        </span>
+      ),
+      mobile: 'subtitle',
+    },
+    {
+      key: 'value',
+      header: t('masterdata.setting_value'),
+      cell: (s) => (
+        <span className="text-xs font-bold text-orange-600 font-mono break-all">
+          {JSON.stringify(s.value)}
+        </span>
+      ),
+      mobile: 'field',
+    },
+    {
+      key: 'actions',
+      header: t('common.actions'),
+      className: 'w-24 text-right',
+      cell: (s) =>
+        hasPermission('settings.write') ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setEditingSetting(s);
+              setSettingValue(
+                typeof s.value === 'object' ? JSON.stringify(s.value) : String(s.value),
+              );
+            }}
+            className="text-xs text-orange-600 hover:text-orange-700"
+          >
+            {t('masterdata.edit_setting')}
+          </Button>
+        ) : null,
+      mobile: 'actions',
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <Page className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-          <Database className="h-6 w-6 text-orange-600" />
-          {t('masterdata.title')}
-        </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          {t('masterdata.subtitle')}
-        </p>
-      </div>
+      <PageHeader
+        title={t('masterdata.title')}
+        description={t('masterdata.subtitle')}
+      />
 
       <Tabs defaultValue="units" className="space-y-4">
-        <TabsList className="flex flex-wrap h-auto gap-1 bg-slate-100 p-1">
-          <TabsTrigger value="units" className="text-xs">
-            <Scale className="h-3.5 w-3.5 mr-1" />
-            {t('masterdata.units')} ({units.length})
-          </TabsTrigger>
-          <TabsTrigger value="taste" className="text-xs">
-            <Sparkles className="h-3.5 w-3.5 mr-1" />
-            {t('masterdata.taste_attributes')} ({tasteAttributes.length})
-          </TabsTrigger>
-          <TabsTrigger value="steps" className="text-xs">
-            <Workflow className="h-3.5 w-3.5 mr-1" />
-            {t('masterdata.process_step_types')} ({stepTypes.length})
-          </TabsTrigger>
-          <TabsTrigger value="lookups" className="text-xs">
-            <ListFilter className="h-3.5 w-3.5 mr-1" />
-            {t('masterdata.lookups')} ({lookups.length})
-          </TabsTrigger>
-          <TabsTrigger value="ingredients" className="text-xs">
-            <Package className="h-3.5 w-3.5 mr-1" />
-            {t('masterdata.ingredients')} ({ingredients.length})
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="text-xs">
-            <SettingsIcon className="h-3.5 w-3.5 mr-1" />
-            {t('masterdata.settings')} ({settings.length})
-          </TabsTrigger>
-        </TabsList>
+        <div className="border-b border-slate-200/80 pb-1 overflow-x-auto scroll-x-touch scrollbar-none">
+          <TabsList className="inline-flex h-11 items-center justify-start rounded-xl bg-slate-100/90 p-1 text-slate-600 gap-1 border border-slate-200/70 shadow-2xs whitespace-nowrap">
+            <TabsTrigger value="units" className="text-xs">
+              <Scale className="h-3.5 w-3.5 mr-1" />
+              {t('masterdata.units')} ({units.length})
+            </TabsTrigger>
+            <TabsTrigger value="taste" className="text-xs">
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+              {t('masterdata.taste_attributes')} ({tasteAttributes.length})
+            </TabsTrigger>
+            <TabsTrigger value="steps" className="text-xs">
+              <Workflow className="h-3.5 w-3.5 mr-1" />
+              {t('masterdata.process_step_types')} ({stepTypes.length})
+            </TabsTrigger>
+            <TabsTrigger value="lookups" className="text-xs">
+              <ListFilter className="h-3.5 w-3.5 mr-1" />
+              {t('masterdata.lookups')} ({lookups.length})
+            </TabsTrigger>
+            <TabsTrigger value="ingredients" className="text-xs">
+              <Package className="h-3.5 w-3.5 mr-1" />
+              {t('masterdata.ingredients')} ({ingredients.length})
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs">
+              <SettingsIcon className="h-3.5 w-3.5 mr-1" />
+              {t('masterdata.settings')} ({settings.length})
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Units Tab */}
         <TabsContent value="units">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('masterdata.unit_code')}</TableHead>
-                    <TableHead>{t('masterdata.unit_symbol')}</TableHead>
-                    <TableHead>{t('masterdata.name_th_en')}</TableHead>
-                    <TableHead>{t('masterdata.unit_dimension')}</TableHead>
-                    <TableHead>{t('masterdata.factor_to_base')}</TableHead>
-                    <TableHead className="w-20 text-center">{t('common.status')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingUnits ? (
-                    <TableSkeletonRows cols={6} />
-                  ) : (
-                    units.map((u) => (
-                      <TableRow key={u.id}>
-                        <TableCell className="font-mono text-xs font-bold text-slate-800">
-                          {u.code}
-                        </TableCell>
-                        <TableCell className="font-bold text-xs text-orange-600">{u.symbol}</TableCell>
-                        <TableCell className="text-xs text-slate-700">
-                          {u.nameTh} / {u.nameEn}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          <Badge variant="outline">{u.dimension}</Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-600">{u.factorToBase}</TableCell>
-                        <TableCell className="text-center">
-                          {u.isActive ? (
-                            <Badge variant="success" className="text-[10px]">
-                              {t('masterdata.status_active')}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {t('masterdata.status_inactive')}
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <DataTable
+            columns={unitColumns}
+            data={units}
+            isLoading={isLoadingUnits}
+            rowKey={(u) => u.id}
+          />
         </TabsContent>
 
         {/* Taste Attributes Tab */}
         <TabsContent value="taste">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('masterdata.attribute_code')}</TableHead>
-                    <TableHead>{t('masterdata.attribute_name')}</TableHead>
-                    <TableHead>{t('masterdata.score_range')}</TableHead>
-                    <TableHead>{t('masterdata.color')}</TableHead>
-                    <TableHead className="w-20 text-center">{t('common.status')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingTaste ? (
-                    <TableSkeletonRows cols={5} />
-                  ) : (
-                    tasteAttributes.map((ta) => (
-                      <TableRow key={ta.id}>
-                        <TableCell className="font-mono text-xs font-bold text-slate-800">
-                          {ta.code}
-                        </TableCell>
-                        <TableCell className="text-xs font-medium text-slate-900">
-                          {ta.nameTh} ({ta.nameEn})
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-600">
-                          {ta.minScore} - {ta.maxScore}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-xs font-mono">
-                            <span
-                              className="inline-block h-3.5 w-3.5 rounded-full border border-slate-300"
-                              style={{ backgroundColor: ta.color }}
-                            />
-                            {ta.color}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {ta.isActive ? (
-                            <Badge variant="success" className="text-[10px]">
-                              {t('masterdata.status_active')}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {t('masterdata.status_inactive')}
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <DataTable
+            columns={tasteColumns}
+            data={tasteAttributes}
+            isLoading={isLoadingTaste}
+            rowKey={(ta) => ta.id}
+          />
         </TabsContent>
 
         {/* Step Types Tab */}
         <TabsContent value="steps">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('masterdata.step_code')}</TableHead>
-                    <TableHead>{t('masterdata.step_type_name')}</TableHead>
-                    <TableHead>{t('recipes.temperature')}</TableHead>
-                    <TableHead>{t('recipes.duration')}</TableHead>
-                    <TableHead>{t('recipes.orientation')}</TableHead>
-                    <TableHead>{t('masterdata.repeatable_label')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingSteps ? (
-                    <TableSkeletonRows cols={6} />
-                  ) : (
-                    stepTypes.map((st) => (
-                      <TableRow key={st.id}>
-                        <TableCell className="font-mono text-xs font-bold text-slate-800">
-                          {st.code}
-                        </TableCell>
-                        <TableCell className="text-xs font-semibold text-slate-900">
-                          {st.nameTh} ({st.nameEn})
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {st.usesTemperature ? (
-                            <Check className="h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <X className="h-4 w-4 text-slate-300" />
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {st.usesDuration ? (
-                            <Check className="h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <X className="h-4 w-4 text-slate-300" />
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {st.usesOrientation ? (
-                            <Check className="h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <X className="h-4 w-4 text-slate-300" />
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {st.isRepeatable ? (
-                            <Badge variant="warning" className="text-[10px]">
-                              {t('masterdata.repeatable_badge')}
-                            </Badge>
-                          ) : (
-                            <span className="text-slate-300 text-xs">-</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <DataTable
+            columns={stepColumns}
+            data={stepTypes}
+            isLoading={isLoadingSteps}
+            rowKey={(st) => st.id}
+          />
         </TabsContent>
 
         {/* Lookups Tab */}
         <TabsContent value="lookups">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('masterdata.lookup_category')}</TableHead>
-                    <TableHead>{t('masterdata.lookup_code')}</TableHead>
-                    <TableHead>{t('masterdata.name_th_en')}</TableHead>
-                    <TableHead className="w-20 text-center">{t('common.status')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingLookups ? (
-                    <TableSkeletonRows cols={4} />
-                  ) : (
-                    lookups.map((l) => (
-                      <TableRow key={l.id}>
-                        <TableCell className="text-xs font-bold text-slate-500">
-                          {l.category}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs font-semibold text-slate-800">
-                          {l.code}
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-700">
-                          {l.nameTh} / {l.nameEn}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {l.isActive ? (
-                            <Badge variant="success" className="text-[10px]">
-                              {t('masterdata.status_active')}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {t('masterdata.status_inactive')}
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <DataTable
+            columns={lookupColumns}
+            data={lookups}
+            isLoading={isLoadingLookups}
+            rowKey={(l) => l.id}
+          />
         </TabsContent>
 
         {/* Ingredients Tab */}
         <TabsContent value="ingredients">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('masterdata.ingredient_code')}</TableHead>
-                    <TableHead>{t('masterdata.ingredient_name')}</TableHead>
-                    <TableHead>{t('masterdata.standard_unit')}</TableHead>
-                    <TableHead>{t('masterdata.prep_notes')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingIngredients ? (
-                    <TableSkeletonRows cols={4} />
-                  ) : (
-                    ingredients.map((ing: any) => (
-                      <TableRow key={ing.id}>
-                        <TableCell className="font-mono text-xs font-bold text-slate-800">
-                          {ing.code}
-                        </TableCell>
-                        <TableCell className="text-xs font-semibold text-slate-900">
-                          {ing.nameTh} ({ing.nameEn})
-                        </TableCell>
-                        <TableCell className="text-xs text-orange-600 font-bold">
-                          {ing.defaultUnit?.symbol}
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-500">{ing.notes || '-'}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <DataTable
+            columns={ingredientColumns}
+            data={ingredients}
+            isLoading={isLoadingIngredients}
+            rowKey={(ing) => ing.id}
+          />
         </TabsContent>
 
         {/* Settings Tab */}
         <TabsContent value="settings">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('masterdata.setting_key')}</TableHead>
-                    <TableHead>{t('masterdata.description')}</TableHead>
-                    <TableHead>{t('masterdata.setting_value')}</TableHead>
-                    <TableHead className="w-24 text-right">{t('common.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingSettings ? (
-                    <TableSkeletonRows cols={4} />
-                  ) : (
-                    settings.map((s: any) => (
-                      <TableRow key={s.key}>
-                        <TableCell className="font-mono text-xs font-bold text-slate-800">
-                          {s.key}
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-600">
-                          {i18n.language === 'th' ? s.descriptionTh : s.descriptionEn}
-                        </TableCell>
-                        <TableCell className="text-xs font-bold text-orange-600">
-                          {JSON.stringify(s.value)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {hasPermission('settings.write') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setEditingSetting(s);
-                                setSettingValue(
-                                  typeof s.value === 'object' ? JSON.stringify(s.value) : String(s.value),
-                                );
-                              }}
-                              className="text-xs text-orange-600"
-                            >
-                              {t('masterdata.edit_setting')}
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <DataTable
+            columns={settingColumns}
+            data={settings}
+            isLoading={isLoadingSettings}
+            rowKey={(s) => s.key}
+          />
         </TabsContent>
       </Tabs>
 
       {/* Edit Setting Dialog */}
       {editingSetting && (
         <Dialog open={Boolean(editingSetting)} onOpenChange={() => setEditingSetting(null)}>
-          <DialogContent className="max-w-md">
+          <DialogContent size="sm">
             <DialogHeader>
               <DialogTitle>
                 {t('masterdata.edit_setting_title', { key: editingSetting.key })}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-3 py-2">
+            <div className="space-y-3 p-4 sm:p-0 sm:py-2 w-full max-w-full overflow-x-hidden">
               <Label htmlFor="set-val">
                 {t('masterdata.setting_val_type', { type: editingSetting.valueType })}
               </Label>
@@ -487,7 +517,7 @@ export function MasterDataPage() {
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingSetting(null)}>
+              <Button variant="outline" onClick={() => setEditingSetting(null)} className="max-sm:hidden">
                 {t('common.cancel')}
               </Button>
               <Button
@@ -500,6 +530,6 @@ export function MasterDataPage() {
           </DialogContent>
         </Dialog>
       )}
-    </div>
+    </Page>
   );
 }

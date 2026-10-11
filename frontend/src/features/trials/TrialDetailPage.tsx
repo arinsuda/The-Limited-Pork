@@ -4,7 +4,6 @@ import { useParams, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowLeft,
   Flame,
   Clock,
   RotateCw,
@@ -48,6 +47,8 @@ import {
 import { Skeleton } from '@/shared/ui/skeleton';
 import { useConfirm } from '@/shared/ui/confirm-modal';
 import { formatDate, cn } from '@/shared/lib/utils';
+import { Page, PageHeader } from '@/shared/ui/page';
+import { ResponsiveActions, type ResponsiveActionItem } from '@/shared/ui/responsive-actions';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { toast } from 'sonner';
 
@@ -403,78 +404,62 @@ export function TrialDetailPage() {
   const evaluations = trial.evaluations ?? [];
   const attachments = trial.attachments ?? [];
 
-  return (
-    <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/trials')}
-            className="text-slate-500 hover:text-slate-900"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold text-lg text-slate-900">
-                {t('trials.trial_no')} {trial.trialNo}
-              </span>
-              <span className="font-mono text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                [{trial.recipe.code} v{trial.versionNo}] {trial.recipe.name}
-              </span>
-              <span className="text-xs text-slate-400">
-                • {formatDate(trial.trialDate, i18n.language)}
-              </span>
-            </div>
-            {trial.title && (
-              <p className="text-xs text-slate-600 mt-1 italic">&quot;{trial.title}&quot;</p>
-            )}
-          </div>
-        </div>
+  const outcomeActions: ResponsiveActionItem[] = [
+    ...(hasPermission('trials.write')
+      ? [
+          {
+            key: 'passed',
+            label: t('trials.outcome_passed'),
+            icon: CheckCircle2,
+            variant: (trial.outcome === 'PASSED' ? 'default' : 'outline') as ResponsiveActionItem['variant'],
+            onClick: () => outcomeMutation.mutate('PASSED'),
+            disabled: outcomeMutation.isPending,
+            priority: 'high' as const,
+          },
+          {
+            key: 'needs_adjustment',
+            label: t('trials.outcome_needs_adjustment'),
+            icon: AlertTriangle,
+            variant: (trial.outcome === 'NEEDS_ADJUSTMENT' ? 'default' : 'outline') as ResponsiveActionItem['variant'],
+            onClick: () => outcomeMutation.mutate('NEEDS_ADJUSTMENT'),
+            disabled: outcomeMutation.isPending,
+            priority: 'high' as const,
+          },
+          {
+            key: 'failed',
+            label: t('trials.outcome_failed'),
+            icon: XCircle,
+            variant: (trial.outcome === 'FAILED' ? 'destructive' : 'outline') as ResponsiveActionItem['variant'],
+            onClick: () => outcomeMutation.mutate('FAILED'),
+            disabled: outcomeMutation.isPending,
+            priority: 'medium' as const,
+          },
+        ]
+      : []),
+  ];
 
-        {/* Outcome Action Buttons */}
-        <div className="flex items-center gap-1.5">
-          {hasPermission('trials.write') && (
-            <>
-              <Button
-                variant={trial.outcome === 'PASSED' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => outcomeMutation.mutate('PASSED')}
-                disabled={outcomeMutation.isPending}
-                className="text-xs"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                {t('trials.outcome_passed')}
-              </Button>
-              <Button
-                variant={trial.outcome === 'NEEDS_ADJUSTMENT' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => outcomeMutation.mutate('NEEDS_ADJUSTMENT')}
-                disabled={outcomeMutation.isPending}
-                className="text-xs"
-              >
-                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-                {t('trials.outcome_needs_adjustment')}
-              </Button>
-              <Button
-                variant={trial.outcome === 'FAILED' ? 'destructive' : 'outline'}
-                size="sm"
-                onClick={() => outcomeMutation.mutate('FAILED')}
-                disabled={outcomeMutation.isPending}
-                className="text-xs"
-              >
-                <XCircle className="h-3.5 w-3.5 mr-1" />
-                {t('trials.outcome_failed')}
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+  return (
+    <Page className="space-y-6">
+      {/* Top Header */}
+      <PageHeader
+        back="/trials"
+        title={`${t('trials.trial_no')} ${trial.trialNo}`}
+        badge={
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-800">
+              [{trial.recipe.code} v{trial.versionNo}] {trial.recipe.name}
+            </span>
+            <span className="text-xs text-slate-400">
+              • {formatDate(trial.trialDate, i18n.language)}
+            </span>
+          </div>
+        }
+        description={trial.title ? <p className="italic">&quot;{trial.title}&quot;</p> : undefined}
+        actions={<ResponsiveActions items={outcomeActions} collapseAt="md" />}
+      />
 
       {/* Metrics Banner */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Overall Score */}
         <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-orange-200">
           <CardContent className="p-4 flex items-center gap-3">
@@ -870,12 +855,12 @@ export function TrialDetailPage() {
 
       {/* Add Evaluation Modal */}
       <Dialog open={isEvaluationModalOpen} onOpenChange={setIsEvaluationModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent size="md" className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t('trials.add_evaluation')}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 p-4 sm:p-0 sm:py-2 w-full max-w-full overflow-x-hidden">
             <div className="space-y-1.5">
               <Label htmlFor="taster-name">
                 {t('trials.taster_name')} <span className="text-red-500">*</span>
@@ -976,8 +961,8 @@ export function TrialDetailPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 pt-2 border-t border-slate-100">
-            <Button variant="outline" onClick={() => setIsEvaluationModalOpen(false)}>
+          <DialogFooter className="gap-2 sm:pt-2 sm:border-t sm:border-slate-100">
+            <Button variant="outline" onClick={() => setIsEvaluationModalOpen(false)} className="max-sm:hidden">
               {t('common.cancel')}
             </Button>
             <Button
@@ -989,6 +974,6 @@ export function TrialDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Page>
   );
 }
