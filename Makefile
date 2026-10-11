@@ -91,8 +91,12 @@ fe-lint: ## Frontend lint + typecheck
 	cd frontend && npm run lint && npm run typecheck
 
 ## ---- All ----
-.PHONY: dev test lint
-dev: infra-up ## Start infra and run Backend & Frontend concurrently in one terminal
+.PHONY: dev dev-cloud test lint
+dev-cloud: ## Run Backend & Frontend locally against Cloud DB (Neon + R2, zero Docker required)
+	@echo "Starting Backend (Go :8080) & Frontend (Vite :5173) with Cloud Database..."
+	@(trap 'kill 0' SIGINT; (cd backend && go run ./cmd/api) & (cd frontend && npm run dev) & wait)
+
+dev: infra-up ## Start local Docker infra and run Backend & Frontend concurrently
 	@echo "Starting Backend & Frontend dev servers..."
 	@(trap 'kill 0' SIGINT; $(MAKE) be-dev & $(MAKE) fe-dev & wait)
 
