@@ -1,22 +1,26 @@
 import { useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Globe, LogIn, UserPlus } from 'lucide-react';
+import { Globe, Lock, Mail, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from './auth-store';
-import { LoginForm } from './components/LoginForm';
-import { RegisterForm } from './components/RegisterForm';
 import { ServerConfigSection } from './components/ServerConfigSection';
 import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
+import { Label } from '@/shared/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/ui/tabs';
 import { BRAND } from '@/shared/config/navigation';
+import { isApiError } from '@/shared/lib/http/api-error';
 
 export function LoginPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { updateUserLocale } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const { login, updateUserLocale } = useAuthStore();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/recipes';
 
@@ -25,17 +29,31 @@ export function LoginPage() {
     updateUserLocale(nextLocale);
   }, [i18n.language, updateUserLocale]);
 
-  const handleSuccess = useCallback(() => {
-    navigate(from, { replace: true });
-  }, [navigate, from]);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setErrorMessage(null);
+      setIsLoading(true);
 
-  const handleSwitchToRegister = useCallback(() => {
-    setActiveTab('register');
-  }, []);
-
-  const handleSwitchToLogin = useCallback(() => {
-    setActiveTab('login');
-  }, []);
+      try {
+        await login(email.trim(), password);
+        navigate(from, { replace: true });
+      } catch (err) {
+        if (isApiError(err)) {
+          if (err.is('INVALID_CREDENTIALS')) {
+            setErrorMessage(t('errors.INVALID_CREDENTIALS'));
+          } else {
+            setErrorMessage(t(`errors.${err.code}`, t('errors.INTERNAL')));
+          }
+        } else {
+          setErrorMessage(t('errors.INTERNAL'));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [email, password, login, navigate, from, t],
+  );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 via-slate-50 to-amber-50 px-3 sm:px-6 py-8 pt-safe pb-safe relative">
@@ -72,51 +90,88 @@ export function LoginPage() {
 
         <Card className="border-slate-200 shadow-xl bg-white/95 backdrop-blur-xs">
           <CardHeader className="space-y-1 p-4 sm:p-6 pb-2 sm:pb-3">
+            <div className="flex items-center justify-center gap-1.5 text-orange-600 text-xs font-semibold">
+              <ShieldCheck className="h-4 w-4" />
+              <span>{t('auth.internal_system')}</span>
+            </div>
             <CardTitle className="text-lg sm:text-xl text-center">
-              {activeTab === 'login' ? t('auth.login_title') : t('auth.register_title')}
+              {t('auth.login_title')}
             </CardTitle>
             <CardDescription className="text-center text-xs">
-              {activeTab === 'login' ? t('auth.login_subtitle') : t('auth.register_subtitle')}
+              {t('auth.login_subtitle')}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-            <Tabs
-              value={activeTab}
-              onValueChange={(val) => setActiveTab(val as 'login' | 'register')}
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-2 mb-4 bg-slate-100 p-1">
-                <TabsTrigger
-                  value="login"
-                  className="text-xs font-semibold flex items-center justify-center gap-1.5"
-                >
-                  <LogIn className="h-3.5 w-3.5" />
-                  {t('auth.login_tab')}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="register"
-                  className="text-xs font-semibold flex items-center justify-center gap-1.5"
-                >
-                  <UserPlus className="h-3.5 w-3.5" />
-                  {t('auth.register_tab')}
-                </TabsTrigger>
-              </TabsList>
+            {errorMessage && (
+              <div
+                role="alert"
+                className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600 font-medium animate-fade-in"
+              >
+                {errorMessage}
+              </div>
+            )}
 
-              <TabsContent value="login" className="mt-0">
-                <LoginForm
-                  onSuccess={handleSuccess}
-                  onSwitchToRegister={handleSwitchToRegister}
-                />
-              </TabsContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="login-email" className="text-xs font-medium">
+                  {t('auth.email')}
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="login-email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9 text-xs sm:text-sm"
+                    placeholder="admin@mookrob.local"
+                  />
+                </div>
+              </div>
 
-              <TabsContent value="register" className="mt-0">
-                <RegisterForm
-                  onSuccess={handleSuccess}
-                  onSwitchToLogin={handleSwitchToLogin}
-                />
-              </TabsContent>
-            </Tabs>
+              <div className="space-y-1.5">
+                <Label htmlFor="login-password" className="text-xs font-medium">
+                  {t('auth.password')}
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="login-password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9 text-xs sm:text-sm"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading || !email.trim() || !password}
+                className="w-full mt-2 font-semibold h-10 sm:h-9 bg-orange-600 hover:bg-orange-700 text-white cursor-pointer"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    {t('common.loading')}
+                  </>
+                ) : (
+                  t('auth.sign_in')
+                )}
+              </Button>
+            </form>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 text-center">
+              <p className="text-[11px] text-slate-500">
+                {t('auth.managed_by_admin')}
+              </p>
+            </div>
 
             <ServerConfigSection />
           </CardContent>

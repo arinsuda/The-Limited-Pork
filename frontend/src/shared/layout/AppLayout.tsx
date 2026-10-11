@@ -9,8 +9,10 @@ import {
   X,
   Sparkles,
   MoreHorizontal,
+  KeyRound,
 } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { ChangePasswordModal } from '@/features/auth/components/ChangePasswordModal';
 import { Button } from '@/shared/ui/button';
 import {
   DropdownMenu,
@@ -30,6 +32,7 @@ export function AppLayout() {
   const location = useLocation();
   const { user, logout, updateUserLocale, hasPermission } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   // The only scrollable region in the app shell (header & bottom nav stay fixed).
   const contentScrollRef = useRef<HTMLDivElement>(null);
 
@@ -423,6 +426,14 @@ export function AppLayout() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  onClick={() => setChangePasswordOpen(true)}
+                  className="cursor-pointer"
+                >
+                  <KeyRound className="h-4 w-4 mr-2 text-slate-500" />
+                  {t('auth.change_password')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
                   onClick={async () => {
                     await logout();
                     navigate('/login');
@@ -458,6 +469,12 @@ export function AppLayout() {
       {/* 5. Mobile Liquid Bottom Navigation (Phones < md)               */}
       {/* ============================================================== */}
       <LiquidBottomNav items={mobileNavItems} activeId={activeBottomNavId} />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        open={changePasswordOpen}
+        onOpenChange={setChangePasswordOpen}
+      />
     </div>
   );
 }

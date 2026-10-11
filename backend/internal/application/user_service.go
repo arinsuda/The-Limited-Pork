@@ -2,6 +2,8 @@ package application
 
 import (
 	"context"
+	"regexp"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/mookrob/backend/internal/application/ports"
@@ -9,6 +11,8 @@ import (
 	"github.com/mookrob/backend/pkg/apperror"
 	"github.com/mookrob/backend/pkg/pagination"
 )
+
+var userEmailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
 type UserService struct {
 	userRepo identity.UserRepository
@@ -64,11 +68,21 @@ func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*identity.User
 }
 
 func (s *UserService) Create(ctx context.Context, input CreateUserInput) (*identity.User, error) {
-	if input.Email == "" || input.DisplayName == "" || input.Password == "" {
-		return nil, apperror.Validation("missing required fields")
+	email := strings.ToLower(strings.TrimSpace(input.Email))
+	if email == "" || !userEmailRegex.MatchString(email) {
+		return nil, apperror.Validation("invalid email address format")
 	}
 
-	existing, _ := s.userRepo.GetByEmail(input.Email)
+	displayName := strings.TrimSpace(input.DisplayName)
+	if len(displayName) < 2 {
+		return nil, apperror.Validation("display name must be at least 2 characters long")
+	}
+
+	if len(input.Password) < 8 {
+		return nil, apperror.Validation("password must be at least 8 characters long")
+	}
+
+	existing, _ := s.userRepo.GetByEmail(email)
 	if existing != nil {
 		return nil, apperror.Duplicate("user with this email already exists")
 	}
@@ -86,6 +100,13 @@ func (s *UserService) Create(ctx context.Context, input CreateUserInput) (*ident
 		}
 	}
 
+	if len(roles) == 0 {
+		cookRole, err := s.roleRepo.GetByCode("COOK")
+		if err == nil && cookRole != nil {
+			roles = append(roles, *cookRole)
+		}
+	}
+
 	locale := input.Locale
 	if locale == "" {
 		locale = "th"
@@ -93,8 +114,8 @@ func (s *UserService) Create(ctx context.Context, input CreateUserInput) (*ident
 
 	u := &identity.User{
 		ID:           s.idGen.NewUUID(),
-		Email:        input.Email,
-		DisplayName:  input.DisplayName,
+		Email:        email,
+		DisplayName:  displayName,
 		PasswordHash: hash,
 		Locale:       locale,
 		IsActive:     input.IsActive,
@@ -141,8 +162,8 @@ func (s *UserService) Update(ctx context.Context, id uuid.UUID, input UpdateUser
 }
 
 func (s *UserService) ResetPassword(ctx context.Context, id uuid.UUID, newPassword string) error {
-	if len(newPassword) < 6 {
-		return apperror.Validation("password must be at least 6 characters")
+	if len(newPassword) < 8 {
+		return apperror.Validation("password must be at least 8 characters")
 	}
 
 	hash, err := s.hasher.HashPassword(newPassword)

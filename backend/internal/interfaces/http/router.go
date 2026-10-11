@@ -66,8 +66,6 @@ func NewRouter(
 		v1.Route("/auth", func(auth chi.Router) {
 			auth.With(middleware.RateLimit(cache, cfg.RateLimitLoginPerMin, time.Minute)).
 				Post("/login", h.Auth.Login)
-			auth.With(middleware.RateLimit(cache, cfg.RateLimitLoginPerMin, time.Minute)).
-				Post("/register", h.Auth.Register)
 			auth.Post("/refresh", h.Auth.Refresh)
 
 			// Auth protected endpoints
@@ -106,6 +104,7 @@ func NewRouter(
 				users.With(middleware.RequirePermission("users.read")).Get("/{id}", h.User.GetByID)
 				users.With(middleware.RequirePermission("users.write")).Put("/{id}", h.User.Update)
 				users.With(middleware.RequirePermission("users.write")).Post("/{id}/reset-password", h.User.ResetPassword)
+				users.With(middleware.RequirePermission("users.write")).Post("/{id}/password", h.User.ResetPassword)
 			})
 			protected.Route("/roles", func(roles chi.Router) {
 				roles.With(middleware.RequirePermission("users.read")).Get("/", h.User.ListRoles)

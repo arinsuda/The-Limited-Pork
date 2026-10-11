@@ -310,8 +310,8 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, curr
 		return apperror.BadRequest("current password is incorrect")
 	}
 
-	if len(newPassword) < 6 {
-		return apperror.Validation("password too short", apperror.Detail{Field: "newPassword", Code: "min_length", Param: "6"})
+	if len(newPassword) < 8 {
+		return apperror.Validation("password too short", apperror.Detail{Field: "newPassword", Code: "min_length", Param: "8"})
 	}
 
 	newHash, err := s.hasher.HashPassword(newPassword)
