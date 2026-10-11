@@ -99,7 +99,7 @@ export const EditUserModal = React.memo(function EditUserModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="sm" mobileVariant="sheet">
+      <DialogContent size="sm" mobileVariant="sheet" className="max-sm:px-5">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-orange-100 text-orange-600">

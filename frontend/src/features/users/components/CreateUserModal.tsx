@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/shared/ui/dialog';
 import { Button } from '@/shared/ui/button';
@@ -110,119 +111,126 @@ export const CreateUserModal = React.memo(function CreateUserModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="md" mobileVariant="fullPage">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-orange-100 text-orange-600">
+      <DialogContent
+        size="md"
+        mobileVariant="fullPage"
+        className="p-0 flex flex-col sm:max-h-[88dvh] overflow-hidden"
+      >
+        <DialogHeader className="px-5 py-4 sm:p-6 border-b border-slate-100 bg-white shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-orange-100 text-orange-600 shrink-0">
               <UserPlus className="h-5 w-5" />
             </div>
-            <div>
-              <DialogTitle className="text-base sm:text-lg">
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="text-base sm:text-lg font-bold text-slate-900">
                 {t('users.create_title')}
               </DialogTitle>
-              <DialogDescription className="text-xs">
+              <DialogDescription className="text-xs text-slate-500 mt-0.5">
                 {t('users.create_subtitle')}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 py-2">
-          {errorMessage && (
-            <div
-              role="alert"
-              className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600 font-medium"
-            >
-              {errorMessage}
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <DialogBody className="px-5 py-4 sm:p-6 space-y-4 overflow-y-auto min-h-0 flex-1">
+            {errorMessage && (
+              <div
+                role="alert"
+                className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600 font-medium"
+              >
+                {errorMessage}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="create-user-name" className="text-xs font-semibold text-slate-700">
+                {t('users.display_name')}
+              </Label>
+              <div className="relative">
+                <UserIcon className="absolute left-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                <Input
+                  id="create-user-name"
+                  type="text"
+                  required
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="pl-9 text-xs sm:text-sm h-10"
+                  placeholder={t('users.display_name_placeholder')}
+                />
+              </div>
             </div>
-          )}
 
-          <div className="space-y-1">
-            <Label htmlFor="create-user-name" className="text-xs font-medium">
-              {t('users.display_name')}
-            </Label>
-            <div className="relative">
-              <UserIcon className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <Input
-                id="create-user-name"
-                type="text"
-                required
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="pl-9 text-xs sm:text-sm"
-                placeholder={t('users.display_name_placeholder')}
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="create-user-email" className="text-xs font-semibold text-slate-700">
+                {t('users.email')}
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                <Input
+                  id="create-user-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-9 text-xs sm:text-sm h-10"
+                  placeholder="staff@mookrob.com"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="create-user-email" className="text-xs font-medium">
-              {t('users.email')}
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <Input
-                id="create-user-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-9 text-xs sm:text-sm"
-                placeholder="staff@mookrob.com"
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="create-user-password" className="text-xs font-semibold text-slate-700">
+                {t('users.initial_password')}
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                <Input
+                  id="create-user-password"
+                  type="password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-9 text-xs sm:text-sm h-10"
+                  placeholder="••••••••"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {t('users.initial_password_hint')}
+              </p>
             </div>
-          </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="create-user-password" className="text-xs font-medium">
-              {t('users.initial_password')}
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <Input
-                id="create-user-password"
-                type="password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-9 text-xs sm:text-sm"
-                placeholder="••••••••"
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="create-user-role" className="text-xs font-semibold text-slate-700">
+                {t('users.role')}
+              </Label>
+              <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                <SelectTrigger id="create-user-role" className="w-full text-xs sm:text-sm h-10">
+                  <SelectValue placeholder={t('users.select_role')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((r) => (
+                    <SelectItem key={r.id} value={r.id} className="text-xs sm:text-sm">
+                      <span className="font-medium">
+                        {i18n.language === 'th' ? r.nameTh : r.nameEn}
+                      </span>
+                      <span className="text-slate-400 text-[11px] ml-1.5">({r.code})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <p className="text-[11px] text-slate-400">
-              {t('users.initial_password_hint')}
-            </p>
-          </div>
+          </DialogBody>
 
-          <div className="space-y-1">
-            <Label htmlFor="create-user-role" className="text-xs font-medium">
-              {t('users.role')}
-            </Label>
-            <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
-              <SelectTrigger id="create-user-role" className="w-full text-xs sm:text-sm">
-                <SelectValue placeholder={t('users.select_role')} />
-              </SelectTrigger>
-              <SelectContent>
-                {roles.map((r) => (
-                  <SelectItem key={r.id} value={r.id} className="text-xs sm:text-sm">
-                    <span className="font-medium">
-                      {i18n.language === 'th' ? r.nameTh : r.nameEn}
-                    </span>
-                    <span className="text-slate-400 text-[11px] ml-1.5">({r.code})</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <DialogFooter className="pt-3">
+          <DialogFooter className="px-5 py-3.5 sm:p-4 border-t border-slate-100 bg-slate-50/80 shrink-0 flex items-center justify-end gap-2.5">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={handleClose}
               disabled={isLoading}
+              className="h-10 px-4 cursor-pointer"
             >
               {t('common.cancel')}
             </Button>
@@ -230,7 +238,7 @@ export const CreateUserModal = React.memo(function CreateUserModal({
               type="submit"
               size="sm"
               disabled={isLoading || !displayName.trim() || !email.trim() || !password}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
+              className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-5 font-medium shadow-xs cursor-pointer"
             >
               {isLoading ? (
                 <>

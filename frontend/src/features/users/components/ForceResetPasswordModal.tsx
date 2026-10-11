@@ -82,7 +82,7 @@ export const ForceResetPasswordModal = React.memo(function ForceResetPasswordMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="sm" mobileVariant="sheet">
+      <DialogContent size="sm" mobileVariant="sheet" className="max-sm:px-5">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-amber-100 text-amber-700">
