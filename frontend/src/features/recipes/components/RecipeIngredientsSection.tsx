@@ -46,7 +46,7 @@ export const RecipeIngredientsSection = React.memo(function RecipeIngredientsSec
         <div className="space-y-2">
           {recipeIngredients.map((row, idx) => (
             <RecipeIngredientRow
-              key={idx}
+              key={row.clientId || idx}
               index={idx}
               row={row}
               ingredientsList={ingredientsList}

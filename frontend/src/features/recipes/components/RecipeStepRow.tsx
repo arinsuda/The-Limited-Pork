@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
@@ -12,7 +12,7 @@ interface RecipeStepRowProps {
   step: RecipeStepInput;
   stepTypes: StepType[];
   orientations: Lookup[];
-  onUpdate: (index: number, field: keyof RecipeStepInput, value: any) => void;
+  onUpdate: (index: number, fieldOrPatch: keyof RecipeStepInput | Partial<RecipeStepInput>, value?: any) => void;
   onRemove: (index: number) => void;
 }
 
@@ -33,33 +33,65 @@ export const RecipeStepRow = React.memo(function RecipeStepRow({
   );
 
   // For custom steps without a preset step type:
-  // Default to false (only instruction/details), unless user explicitly toggled it or has existing values
-  const [showCustomControls, setShowCustomControls] = useState(
-    Boolean(step.temperatureC !== '' || step.durationMinutes !== ''),
+  // Controlled by step.showCustomControls or fallback to existing values
+  const isCustom = !currentStepType;
+  const isCustomThermalEnabled = isCustom && (
+    step.showCustomControls !== undefined
+      ? step.showCustomControls
+      : Boolean(step.temperatureC !== '' || step.durationMinutes !== '')
   );
 
   // Field visibility based on schema
-  const usesTemp = currentStepType ? currentStepType.usesTemperature : showCustomControls;
-  const usesDuration = currentStepType ? currentStepType.usesDuration : showCustomControls;
+  const usesTemp = currentStepType ? currentStepType.usesTemperature : isCustomThermalEnabled;
+  const usesDuration = currentStepType ? currentStepType.usesDuration : isCustomThermalEnabled;
   const usesOrientation = currentStepType ? currentStepType.usesOrientation : false;
 
   const activeControlCount =
     (usesTemp ? 1 : 0) + (usesDuration ? 1 : 0) + (usesOrientation ? 1 : 0);
 
+  const handleToggleCustomControls = useCallback(() => {
+    if (isCustomThermalEnabled) {
+      // Hiding controls: CLEAR temperature, duration, orientation from step data!
+      onUpdate(index, {
+        showCustomControls: false,
+        temperatureC: '',
+        durationMinutes: '',
+        orientationId: '',
+      });
+    } else {
+      // Showing controls: enable them
+      onUpdate(index, {
+        showCustomControls: true,
+      });
+    }
+  }, [index, isCustomThermalEnabled, onUpdate]);
+
   const handleStepSelect = useCallback(
     (newTitle: string, newTypeId: string, selectedType?: StepType | null) => {
-      onUpdate(index, 'title', newTitle);
-      onUpdate(index, 'stepTypeId', newTypeId);
+      const patch: Partial<RecipeStepInput> = {
+        title: newTitle,
+        stepTypeId: newTypeId,
+      };
 
       // If switching to a step type that does NOT use temperature/duration/orientation,
       // clean up leftover values so junk data doesn't persist
       if (selectedType) {
-        if (!selectedType.usesTemperature) onUpdate(index, 'temperatureC', '');
-        if (!selectedType.usesDuration) onUpdate(index, 'durationMinutes', '');
-        if (!selectedType.usesOrientation) onUpdate(index, 'orientationId', '');
+        if (!selectedType.usesTemperature) patch.temperatureC = '';
+        if (!selectedType.usesDuration) patch.durationMinutes = '';
+        if (!selectedType.usesOrientation) patch.orientationId = '';
+        patch.showCustomControls = Boolean(
+          selectedType.usesTemperature || selectedType.usesDuration,
+        );
+      } else {
+        patch.orientationId = '';
+        patch.showCustomControls = Boolean(
+          step.temperatureC !== '' || step.durationMinutes !== '',
+        );
       }
+
+      onUpdate(index, patch);
     },
-    [index, onUpdate],
+    [index, onUpdate, step.temperatureC, step.durationMinutes],
   );
 
   return (
@@ -165,11 +197,11 @@ export const RecipeStepRow = React.memo(function RecipeStepRow({
           </span>
           <button
             type="button"
-            onClick={() => setShowCustomControls(!showCustomControls)}
+            onClick={handleToggleCustomControls}
             className="text-[11px] font-medium text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
           >
             <SlidersHorizontal className="h-3 w-3" />
-            {showCustomControls
+            {isCustomThermalEnabled
               ? t('recipes.step_hide_thermal_controls')
               : t('recipes.step_add_thermal_controls')}
           </button>

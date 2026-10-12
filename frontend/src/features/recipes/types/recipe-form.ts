@@ -33,6 +33,7 @@ export interface Lookup {
 }
 
 export interface RecipeStepInput {
+  clientId?: string;
   stepTypeId: string;
   title: string;
   instruction: string;
@@ -40,9 +41,11 @@ export interface RecipeStepInput {
   durationMinutes: number | '';
   orientationId: string;
   notes: string;
+  showCustomControls?: boolean;
 }
 
 export interface RecipeIngredientInput {
+  clientId?: string;
   ingredientId: string;
   quantity: number | '';
   unitId: string;

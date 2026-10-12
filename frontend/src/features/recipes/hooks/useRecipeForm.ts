@@ -18,6 +18,11 @@ interface Tag {
   nameEn: string;
 }
 
+let clientIdCounter = 1;
+function generateClientId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${clientIdCounter++}`;
+}
+
 interface UseRecipeFormOptions {
   open: boolean;
   mode: 'create' | 'edit' | 'new_version';
@@ -38,21 +43,86 @@ export function useRecipeForm({
   const isEditing = mode === 'edit';
   const isCreatingVersion = mode === 'new_version' || (!mode && Boolean(recipeId) && !isEditing);
 
-  // Form states
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
-  const [description, setDescription] = useState('');
-  const [sourceUrl, setSourceUrl] = useState('');
-  const [changeNote, setChangeNote] = useState('');
-  const [specifyPorkQuantity, setSpecifyPorkQuantity] = useState(true);
-  const [inputQuantity, setInputQuantity] = useState<number | ''>(1);
-  const [inputUnitId, setInputUnitId] = useState('');
-  const [expectedOutputQuantity, setExpectedOutputQuantity] = useState<number | ''>(650);
-  const [expectedOutputUnitId, setExpectedOutputUnitId] = useState('');
-  const [notes, setNotes] = useState('');
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredientInput[]>([]);
-  const [recipeSteps, setRecipeSteps] = useState<RecipeStepInput[]>([]);
+  const cur = initialRecipe?.currentVersion;
+  const initialSpecifyPork =
+    isEditing || isCreatingVersion
+      ? typeof cur?.inputQuantity === 'number'
+      : true;
+
+  // Form states initialized synchronously from initialRecipe
+  const [name, setName] = useState(
+    () => (isEditing && initialRecipe ? initialRecipe.name || '' : ''),
+  );
+  const [code, setCode] = useState(
+    () => (isEditing && initialRecipe ? initialRecipe.code || '' : ''),
+  );
+  const [description, setDescription] = useState(
+    () => (isEditing && initialRecipe ? initialRecipe.description || '' : ''),
+  );
+  const [sourceUrl, setSourceUrl] = useState(
+    () => (isEditing && initialRecipe ? initialRecipe.sourceUrl || '' : ''),
+  );
+  const [changeNote, setChangeNote] = useState(
+    () => (isEditing && cur ? cur.changeNote || '' : ''),
+  );
+  const [specifyPorkQuantity, setSpecifyPorkQuantity] = useState(initialSpecifyPork);
+  const [inputQuantity, setInputQuantity] = useState<number | ''>(() => {
+    if ((isEditing || isCreatingVersion) && cur) {
+      return typeof cur.inputQuantity === 'number' ? cur.inputQuantity : '';
+    }
+    return 1;
+  });
+  const [inputUnitId, setInputUnitId] = useState(() => cur?.inputUnitId || '');
+  const [expectedOutputQuantity, setExpectedOutputQuantity] = useState<number | ''>(() => {
+    if ((isEditing || isCreatingVersion) && cur) {
+      return typeof cur.expectedOutputQuantity === 'number'
+        ? cur.expectedOutputQuantity
+        : '';
+    }
+    return 650;
+  });
+  const [expectedOutputUnitId, setExpectedOutputUnitId] = useState(
+    () => cur?.expectedOutputUnitId || '',
+  );
+  const [notes, setNotes] = useState(() => (isEditing && cur ? cur.notes || '' : ''));
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(() => {
+    if (isEditing && initialRecipe?.tags) {
+      return initialRecipe.tags.map((tag: any) => tag.id);
+    }
+    return [];
+  });
+  const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredientInput[]>(() => {
+    if ((isEditing || isCreatingVersion) && cur?.ingredients && cur.ingredients.length > 0) {
+      return cur.ingredients.map((ing: any) => ({
+        clientId: generateClientId('ing'),
+        ingredientId: ing.ingredientId || ing.ingredient?.id || '',
+        quantity: ing.quantity,
+        unitId: ing.unitId || '',
+        preparationNote: ing.preparationNote || '',
+        isOptional: Boolean(ing.isOptional),
+      }));
+    }
+    return [];
+  });
+  const [recipeSteps, setRecipeSteps] = useState<RecipeStepInput[]>(() => {
+    if ((isEditing || isCreatingVersion) && cur?.steps && cur.steps.length > 0) {
+      return cur.steps.map((st: any) => ({
+        clientId: generateClientId('step'),
+        stepTypeId: st.stepTypeId || st.stepType?.id || '',
+        title: st.title || '',
+        instruction: st.instruction || '',
+        temperatureC: typeof st.temperatureC === 'number' ? st.temperatureC : '',
+        durationMinutes: typeof st.durationMinutes === 'number' ? st.durationMinutes : '',
+        orientationId: st.orientationId || st.orientation?.id || '',
+        notes: st.notes || '',
+        showCustomControls: Boolean(
+          (typeof st.temperatureC === 'number' && st.temperatureC > 0) ||
+          (typeof st.durationMinutes === 'number' && st.durationMinutes > 0),
+        ),
+      }));
+    }
+    return [];
+  });
 
   // Master data queries
   const { data: units = [] } = useQuery<Unit[]>({
@@ -102,128 +172,7 @@ export function useRecipeForm({
     }
   }, [units, inputUnitId]);
 
-  // Form population & reset on modal open
-  useEffect(() => {
-    if (!open) return;
 
-    if (isEditing && initialRecipe) {
-      setName(initialRecipe.name || '');
-      setCode(initialRecipe.code || '');
-      setDescription(initialRecipe.description || '');
-      setSourceUrl(initialRecipe.sourceUrl || '');
-      setSelectedTagIds(initialRecipe.tags?.map((tag: any) => tag.id) || []);
-
-      const cur = initialRecipe.currentVersion;
-      if (cur) {
-        const hasInputQty = typeof cur.inputQuantity === 'number';
-        setSpecifyPorkQuantity(hasInputQty);
-        setInputQuantity(hasInputQty ? cur.inputQuantity : '');
-        setExpectedOutputQuantity(
-          typeof cur.expectedOutputQuantity === 'number' ? cur.expectedOutputQuantity : '',
-        );
-        setChangeNote(cur.changeNote || '');
-        setNotes(cur.notes || '');
-
-        if (cur.inputUnitId) {
-          setInputUnitId(cur.inputUnitId);
-        } else if (cur.inputUnit && units.length > 0) {
-          const matched = units.find(
-            (u) => u.symbol === cur.inputUnit?.symbol || u.code === cur.inputUnit?.symbol,
-          );
-          if (matched) setInputUnitId(matched.id);
-        }
-
-        if (cur.expectedOutputUnitId) {
-          setExpectedOutputUnitId(cur.expectedOutputUnitId);
-        } else if (cur.expectedOutputUnit && units.length > 0) {
-          const matched = units.find(
-            (u) =>
-              u.symbol === cur.expectedOutputUnit?.symbol ||
-              u.code === cur.expectedOutputUnit?.symbol,
-          );
-          if (matched) setExpectedOutputUnitId(matched.id);
-        }
-
-        if (cur.ingredients && cur.ingredients.length > 0) {
-          setRecipeIngredients(
-            cur.ingredients.map((ing: any) => ({
-              ingredientId: ing.ingredientId || ing.ingredient?.id || '',
-              quantity: ing.quantity,
-              unitId: ing.unitId || (units.find((u) => u.symbol === ing.unit?.symbol)?.id ?? ''),
-              preparationNote: ing.preparationNote || '',
-              isOptional: Boolean(ing.isOptional),
-            })),
-          );
-        } else {
-          setRecipeIngredients([]);
-        }
-
-        if (cur.steps && cur.steps.length > 0) {
-          setRecipeSteps(
-            cur.steps.map((st: any) => ({
-              stepTypeId: st.stepTypeId || st.stepType?.id || '',
-              title: st.title || '',
-              instruction: st.instruction || '',
-              temperatureC: typeof st.temperatureC === 'number' ? st.temperatureC : '',
-              durationMinutes: typeof st.durationMinutes === 'number' ? st.durationMinutes : '',
-              orientationId: st.orientationId || st.orientation?.id || '',
-              notes: st.notes || '',
-            })),
-          );
-        } else {
-          setRecipeSteps([]);
-        }
-      }
-    } else if (isCreatingVersion) {
-      setChangeNote('');
-      if (initialRecipe?.currentVersion) {
-        const cur = initialRecipe.currentVersion;
-        const hasInputQty = typeof cur.inputQuantity === 'number';
-        setSpecifyPorkQuantity(hasInputQty);
-        setInputQuantity(hasInputQty ? cur.inputQuantity : '');
-        setExpectedOutputQuantity(
-          typeof cur.expectedOutputQuantity === 'number' ? cur.expectedOutputQuantity : '',
-        );
-        if (cur.ingredients && cur.ingredients.length > 0) {
-          setRecipeIngredients(
-            cur.ingredients.map((ing: any) => ({
-              ingredientId: ing.ingredientId || ing.ingredient?.id || '',
-              quantity: ing.quantity,
-              unitId: ing.unitId || (units.find((u) => u.symbol === ing.unit?.symbol)?.id ?? ''),
-              preparationNote: ing.preparationNote || '',
-              isOptional: Boolean(ing.isOptional),
-            })),
-          );
-        }
-        if (cur.steps && cur.steps.length > 0) {
-          setRecipeSteps(
-            cur.steps.map((st: any) => ({
-              stepTypeId: st.stepTypeId || st.stepType?.id || '',
-              title: st.title || '',
-              instruction: st.instruction || '',
-              temperatureC: typeof st.temperatureC === 'number' ? st.temperatureC : '',
-              durationMinutes: typeof st.durationMinutes === 'number' ? st.durationMinutes : '',
-              orientationId: st.orientationId || st.orientation?.id || '',
-              notes: st.notes || '',
-            })),
-          );
-        }
-      }
-    } else {
-      // Fresh create
-      setName('');
-      setCode('');
-      setDescription('');
-      setSourceUrl('');
-      setChangeNote('');
-      setSpecifyPorkQuantity(true);
-      setInputQuantity(1);
-      setExpectedOutputQuantity(650);
-      setSelectedTagIds([]);
-      setRecipeIngredients([]);
-      setRecipeSteps([]);
-    }
-  }, [open, isEditing, isCreatingVersion, initialRecipe, units]);
 
   // Default preset steps on fresh create
   useEffect(() => {
@@ -243,6 +192,7 @@ export function useRecipeForm({
       const initial: RecipeStepInput[] = [];
       if (boil) {
         initial.push({
+          clientId: generateClientId('step'),
           stepTypeId: boil.id,
           title: 'ต้ม / ลวกเนื้อหมู',
           instruction: 'ต้มหมูในน้ำเดือดใส่เกลือจนสุกระดับหนึ่ง',
@@ -254,6 +204,7 @@ export function useRecipeForm({
       }
       if (dry) {
         initial.push({
+          clientId: generateClientId('step'),
           stepTypeId: dry.id,
           title: 'ตาก / อบไล่ความชื้น',
           instruction: 'บั้งหนังหมูและทาเกลือ/น้ำส้มสายชู อบไล่ความชื้น',
@@ -265,6 +216,7 @@ export function useRecipeForm({
       }
       if (fry) {
         initial.push({
+          clientId: generateClientId('step'),
           stepTypeId: fry.id,
           title: 'ทอดรอบแรก (สุกทั่วถึง)',
           instruction: 'ทอดไฟกลางให้น้ำมันท่วมจนเหลืองทอง',
@@ -293,6 +245,7 @@ export function useRecipeForm({
     setRecipeIngredients((prev) => [
       ...prev,
       {
+        clientId: generateClientId('ing'),
         ingredientId: firstIng?.id ?? '',
         quantity: 10,
         unitId: firstIng?.defaultUnitId || defaultUnit?.id || '',
@@ -320,6 +273,7 @@ export function useRecipeForm({
     setRecipeSteps((prev) => [
       ...prev,
       {
+        clientId: generateClientId('step'),
         stepTypeId: defaultSt?.id ?? '',
         title: '',
         instruction: '',
@@ -327,6 +281,7 @@ export function useRecipeForm({
         durationMinutes: 15,
         orientationId: '',
         notes: '',
+        showCustomControls: true,
       },
     ]);
   }, [stepTypes]);
@@ -336,9 +291,15 @@ export function useRecipeForm({
   }, []);
 
   const updateStepRow = useCallback(
-    (index: number, field: keyof RecipeStepInput, value: any) => {
+    (index: number, fieldOrPatch: keyof RecipeStepInput | Partial<RecipeStepInput>, value?: any) => {
       setRecipeSteps((prev) =>
-        prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
+        prev.map((item, i) => {
+          if (i !== index) return item;
+          if (typeof fieldOrPatch === 'object' && fieldOrPatch !== null) {
+            return { ...item, ...fieldOrPatch };
+          }
+          return { ...item, [fieldOrPatch]: value };
+        }),
       );
     },
     [],
@@ -358,6 +319,8 @@ export function useRecipeForm({
           let stepTypeId = s.stepTypeId;
 
           const existingById = stepTypes.find((st) => st.id === stepTypeId);
+          let matchedType = existingById;
+
           if (!existingById && s.title && s.title.trim()) {
             const trimmedTitle = s.title.trim();
             const existingByName = stepTypes.find(
@@ -368,35 +331,53 @@ export function useRecipeForm({
 
             if (existingByName) {
               stepTypeId = existingByName.id;
+              matchedType = existingByName;
             } else {
+              const hasTemp = s.temperatureC !== '';
+              const hasDuration = s.durationMinutes !== '';
+              const usesTemp = Boolean(s.showCustomControls ?? (hasTemp || hasDuration));
+              const usesDuration = Boolean(s.showCustomControls ?? (hasTemp || hasDuration));
+
               try {
                 const created = await http.post<StepType>('/process-step-types', {
                   code: `STEP_${Date.now().toString(36).toUpperCase()}_${idx}`,
                   nameTh: trimmedTitle,
                   nameEn: trimmedTitle,
-                  usesTemperature: true,
-                  usesDuration: true,
+                  usesTemperature: usesTemp,
+                  usesDuration: usesDuration,
                   usesOrientation: false,
                   isRepeatable: false,
                 });
                 stepTypeId = created.id;
+                matchedType = created;
                 hasCreatedNewStepType = true;
               } catch {
                 stepTypeId = stepTypes[0]?.id || '';
+                matchedType = stepTypes[0];
               }
             }
           } else if (!existingById) {
             stepTypeId = stepTypes[0]?.id || '';
+            matchedType = stepTypes[0];
           }
+
+          // Determine whether thermal / timing / orientation parameters are active
+          const isCustom = !matchedType;
+          const isThermalActive = isCustom
+            ? Boolean(s.showCustomControls ?? (s.temperatureC !== '' || s.durationMinutes !== ''))
+            : true;
+          const usesTemp = matchedType ? matchedType.usesTemperature : isThermalActive;
+          const usesDuration = matchedType ? matchedType.usesDuration : isThermalActive;
+          const usesOrientation = matchedType ? matchedType.usesOrientation : false;
 
           return {
             stepOrder: idx + 1,
             stepTypeId,
             title: s.title || null,
             instruction: s.instruction || null,
-            temperatureC: s.temperatureC !== '' ? Number(s.temperatureC) : null,
-            durationMinutes: s.durationMinutes !== '' ? Number(s.durationMinutes) : null,
-            orientationId: s.orientationId ? s.orientationId : null,
+            temperatureC: usesTemp && s.temperatureC !== '' ? Number(s.temperatureC) : null,
+            durationMinutes: usesDuration && s.durationMinutes !== '' ? Number(s.durationMinutes) : null,
+            orientationId: usesOrientation && s.orientationId ? s.orientationId : null,
             params: {},
             notes: s.notes ? s.notes : null,
           };

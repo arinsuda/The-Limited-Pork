@@ -11,7 +11,7 @@ interface RecipeStepsSectionProps {
   orientations: Lookup[];
   onAdd: () => void;
   onClear: () => void;
-  onUpdate: (index: number, field: keyof RecipeStepInput, value: any) => void;
+  onUpdate: (index: number, fieldOrPatch: keyof RecipeStepInput | Partial<RecipeStepInput>, value?: any) => void;
   onRemove: (index: number) => void;
 }
 
@@ -66,7 +66,7 @@ export const RecipeStepsSection = React.memo(function RecipeStepsSection({
         <div className="space-y-3">
           {recipeSteps.map((step, idx) => (
             <RecipeStepRow
-              key={idx}
+              key={step.clientId || idx}
               index={idx}
               step={step}
               stepTypes={stepTypes}

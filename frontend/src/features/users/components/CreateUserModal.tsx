@@ -37,13 +37,16 @@ export const CreateUserModal = React.memo(function CreateUserModal({
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRoleId, setSelectedRoleId] = useState('');
+  const [selectedRoleId, setSelectedRoleId] = useState(() => {
+    const defaultRole = roles.find((r) => r.code === 'COOK') || roles[0];
+    return defaultRole?.id || '';
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Default role to COOK if available
   React.useEffect(() => {
-    if (roles.length > 0 && !selectedRoleId) {
+    if (roles.length > 0 && (!selectedRoleId || !roles.some((r) => r.id === selectedRoleId))) {
       const defaultRole = roles.find((r) => r.code === 'COOK') || roles[0];
       if (defaultRole) {
         setSelectedRoleId(defaultRole.id);
@@ -210,14 +213,20 @@ export const CreateUserModal = React.memo(function CreateUserModal({
                   <SelectValue placeholder={t('users.select_role')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((r) => (
-                    <SelectItem key={r.id} value={r.id} className="text-xs sm:text-sm">
-                      <span className="font-medium">
-                        {i18n.language === 'th' ? r.nameTh : r.nameEn}
-                      </span>
-                      <span className="text-slate-400 text-[11px] ml-1.5">({r.code})</span>
-                    </SelectItem>
-                  ))}
+                  {roles.length === 0 ? (
+                    <div className="p-2 text-center text-xs text-slate-400">
+                      {t('common.no_data')}
+                    </div>
+                  ) : (
+                    roles.map((r) => (
+                      <SelectItem key={r.id} value={r.id} className="text-xs sm:text-sm">
+                        <span className="font-medium">
+                          {i18n.language === 'th' ? r.nameTh : r.nameEn}
+                        </span>
+                        <span className="text-slate-400 text-[11px] ml-1.5">({r.code})</span>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

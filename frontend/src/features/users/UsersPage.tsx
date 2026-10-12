@@ -39,11 +39,17 @@ export function UsersPage() {
 
   const { data: rolesData } = useQuery({
     queryKey: ['roles'],
-    queryFn: () => http.get<RolesResponse>('/roles'),
+    queryFn: () => http.get<Role[] | RolesResponse>('/roles'),
   });
 
   const users = useMemo(() => usersData?.data || [], [usersData]);
-  const roles = useMemo(() => rolesData?.data || [], [rolesData]);
+  const roles = useMemo(() => {
+    if (Array.isArray(rolesData)) return rolesData;
+    if (rolesData && 'data' in rolesData && Array.isArray((rolesData as RolesResponse).data)) {
+      return (rolesData as RolesResponse).data;
+    }
+    return [];
+  }, [rolesData]);
 
   const filteredUsers = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -185,26 +191,32 @@ export function UsersPage() {
       )}
 
       {/* Modals */}
-      <CreateUserModal
-        open={createModalOpen}
-        onOpenChange={setCreateModalOpen}
-        roles={roles}
-        onCreated={handleUserMutated}
-      />
+      {createModalOpen && (
+        <CreateUserModal
+          open={createModalOpen}
+          onOpenChange={setCreateModalOpen}
+          roles={roles}
+          onCreated={handleUserMutated}
+        />
+      )}
 
-      <EditUserModal
-        user={editUser}
-        open={!!editUser}
-        onOpenChange={(open) => !open && setEditUser(null)}
-        roles={roles}
-        onUpdated={handleUserMutated}
-      />
+      {editUser && (
+        <EditUserModal
+          user={editUser}
+          open={!!editUser}
+          onOpenChange={(open) => !open && setEditUser(null)}
+          roles={roles}
+          onUpdated={handleUserMutated}
+        />
+      )}
 
-      <ForceResetPasswordModal
-        user={resetPasswordUser}
-        open={!!resetPasswordUser}
-        onOpenChange={(open) => !open && setResetPasswordUser(null)}
-      />
+      {resetPasswordUser && (
+        <ForceResetPasswordModal
+          user={resetPasswordUser}
+          open={!!resetPasswordUser}
+          onOpenChange={(open) => !open && setResetPasswordUser(null)}
+        />
+      )}
     </div>
   );
 }

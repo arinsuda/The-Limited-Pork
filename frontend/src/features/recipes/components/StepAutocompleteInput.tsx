@@ -55,8 +55,9 @@ export const StepAutocompleteInput = React.memo(function StepAutocompleteInput({
   // Total selectable items (filtered items + optional "create new" action)
   const totalOptions = filtered.length + (canCreateNew ? 1 : 0);
 
-  // Close when clicking outside
+  // Close when clicking outside - only active when open to prevent unneeded global handler executions
   useEffect(() => {
+    if (!isOpen) return;
     function handleClickOutside(e: MouseEvent | TouchEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
@@ -65,23 +66,27 @@ export const StepAutocompleteInput = React.memo(function StepAutocompleteInput({
     }
     document.addEventListener('pointerdown', handleClickOutside);
     return () => document.removeEventListener('pointerdown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   const handleSelectExisting = useCallback(
     (st: StepType) => {
       const name = i18n.language === 'th' ? st.nameTh || st.nameEn : st.nameEn || st.nameTh;
-      onChange(name, st.id, st);
       setIsOpen(false);
       setHighlightedIndex(-1);
+      React.startTransition(() => {
+        onChange(name, st.id, st);
+      });
     },
     [i18n.language, onChange],
   );
 
   const handleSelectNew = useCallback(
     (customTitle: string) => {
-      onChange(customTitle.trim(), '', null);
       setIsOpen(false);
       setHighlightedIndex(-1);
+      React.startTransition(() => {
+        onChange(customTitle.trim(), '', null);
+      });
     },
     [onChange],
   );
@@ -174,7 +179,6 @@ export const StepAutocompleteInput = React.memo(function StepAutocompleteInput({
                 type="button"
                 role="option"
                 aria-selected={isSelected}
-                onMouseEnter={() => setHighlightedIndex(idx)}
                 onClick={() => handleSelectExisting(st)}
                 className={cn(
                   'w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between gap-2 transition-colors cursor-pointer',
@@ -182,7 +186,7 @@ export const StepAutocompleteInput = React.memo(function StepAutocompleteInput({
                     ? 'bg-amber-50 text-amber-950 font-medium'
                     : isSelected
                       ? 'bg-slate-50 text-slate-900 font-medium'
-                      : 'text-slate-700 hover:bg-slate-100/70',
+                      : 'text-slate-700 hover:bg-amber-50/70 hover:text-amber-950',
                 )}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -204,13 +208,12 @@ export const StepAutocompleteInput = React.memo(function StepAutocompleteInput({
           {canCreateNew && (
             <button
               type="button"
-              onMouseEnter={() => setHighlightedIndex(filtered.length)}
               onClick={() => handleSelectNew(value)}
               className={cn(
                 'w-full text-left px-2.5 py-2 mt-1 rounded-lg text-xs flex items-center gap-2 border-t border-slate-100 transition-colors cursor-pointer',
                 highlightedIndex === filtered.length
                   ? 'bg-amber-100/80 text-amber-950 font-semibold'
-                  : 'bg-amber-50/60 text-amber-900 hover:bg-amber-100/70',
+                  : 'bg-amber-50/60 text-amber-900 hover:bg-amber-100/80',
               )}
             >
               <div className="h-5 w-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, startTransition } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -35,26 +35,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-function getYouTubeEmbedUrl(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    const trimmed = url.trim();
-    const shortMatch = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-    if (shortMatch && shortMatch[1]) {
-      return `https://www.youtube.com/embed/${shortMatch[1]}`;
-    }
-    const longMatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-    if (longMatch && longMatch[1]) {
-      return `https://www.youtube.com/embed/${longMatch[1]}`;
-    }
-    const shortsMatch = trimmed.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
-    if (shortsMatch && shortsMatch[1]) {
-      return `https://www.youtube.com/embed/${shortsMatch[1]}`;
-    }
-  } catch {}
-  return null;
-}
-
 function getStepIcon(iconName: string | null, code?: string) {
   const key = (iconName || code || '').toLowerCase();
   if (key.includes('flame') || key.includes('boil') || key.includes('fry') || key.includes('simmer')) {
@@ -89,6 +69,7 @@ import { formatDateTime } from '@/shared/lib/utils';
 import { Page, PageHeader } from '@/shared/ui/page';
 import { ResponsiveActions, type ResponsiveActionItem } from '@/shared/ui/responsive-actions';
 import { RecipeFormModal } from './RecipeFormModal';
+import { YouTubePlayerFacade } from './components/YouTubePlayerFacade';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { toast } from 'sonner';
 
@@ -217,7 +198,7 @@ export function RecipeDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
     },
     onError: (err: any) => {
-      toast.error(err.message || 'Failed to restore version');
+      toast.error(err.message || t('common.error'));
     },
   });
 
@@ -235,6 +216,86 @@ export function RecipeDetailPage() {
       toast.error(err.message || t('common.error'));
     },
   });
+  const handleOpenEdit = useCallback(() => {
+    startTransition(() => {
+      setIsEditModalOpen(true);
+    });
+  }, []);
+
+  const handleOpenVersion = useCallback(() => {
+    startTransition(() => {
+      setIsVersionModalOpen(true);
+    });
+  }, []);
+
+  const handleOpenDelete = useCallback(() => {
+    startTransition(() => {
+      setIsDeleteDialogOpen(true);
+    });
+  }, []);
+
+  const actions: ResponsiveActionItem[] = useMemo(() => {
+    if (!recipe) return [];
+    return [
+      ...(hasPermission('recipes.write')
+        ? [
+            {
+              key: 'edit',
+              label: t('recipes.action_edit'),
+              icon: Pencil,
+              variant: 'outline' as const,
+              onClick: handleOpenEdit,
+              priority: 'high' as const,
+            },
+          ]
+        : []),
+      ...(hasPermission('recipes.write') && recipe.status === 'DRAFT'
+        ? [
+            {
+              key: 'mark_testing',
+              label: t('recipes.action_mark_testing'),
+              icon: FlaskConical,
+              variant: 'outline' as const,
+              onClick: () => statusMutation.mutate('TESTING'),
+              disabled: statusMutation.isPending,
+              priority: 'high' as const,
+            },
+          ]
+        : []),
+      ...(hasPermission('recipes.approve') && recipe.status === 'TESTING'
+        ? [
+            {
+              key: 'approve',
+              label: t('recipes.action_approve'),
+              icon: CheckCircle2,
+              variant: 'outline' as const,
+              onClick: () => statusMutation.mutate('APPROVED'),
+              disabled: statusMutation.isPending,
+              priority: 'high' as const,
+            },
+          ]
+        : []),
+      ...(hasPermission('recipes.write')
+        ? [
+            {
+              key: 'new_version',
+              label: t('recipes.create_new_version'),
+              icon: Plus,
+              onClick: handleOpenVersion,
+              priority: 'high' as const,
+            },
+            {
+              key: 'delete',
+              label: t('recipes.action_delete'),
+              icon: Trash2,
+              variant: 'destructive' as const,
+              onClick: handleOpenDelete,
+              priority: 'low' as const,
+            },
+          ]
+        : []),
+    ];
+  }, [hasPermission, recipe, t, handleOpenEdit, handleOpenVersion, handleOpenDelete, statusMutation]);
 
   if (isLoading) {
     return (
@@ -339,65 +400,7 @@ export function RecipeDetailPage() {
       ? Number(((current.expectedOutputQuantity / current.inputQuantity) * 100).toFixed(1))
       : null;
 
-  const actions: ResponsiveActionItem[] = [
-    ...(hasPermission('recipes.write')
-      ? [
-          {
-            key: 'edit',
-            label: t('recipes.action_edit'),
-            icon: Pencil,
-            variant: 'outline' as const,
-            onClick: () => setIsEditModalOpen(true),
-            priority: 'high' as const,
-          },
-        ]
-      : []),
-    ...(hasPermission('recipes.write') && recipe.status === 'DRAFT'
-      ? [
-          {
-            key: 'mark_testing',
-            label: t('recipes.action_mark_testing'),
-            icon: FlaskConical,
-            variant: 'outline' as const,
-            onClick: () => statusMutation.mutate('TESTING'),
-            disabled: statusMutation.isPending,
-            priority: 'high' as const,
-          },
-        ]
-      : []),
-    ...(hasPermission('recipes.approve') && recipe.status === 'TESTING'
-      ? [
-          {
-            key: 'approve',
-            label: t('recipes.action_approve'),
-            icon: CheckCircle2,
-            variant: 'outline' as const,
-            onClick: () => statusMutation.mutate('APPROVED'),
-            disabled: statusMutation.isPending,
-            priority: 'high' as const,
-          },
-        ]
-      : []),
-    ...(hasPermission('recipes.write')
-      ? [
-          {
-            key: 'new_version',
-            label: t('recipes.create_new_version'),
-            icon: Plus,
-            onClick: () => setIsVersionModalOpen(true),
-            priority: 'high' as const,
-          },
-          {
-            key: 'delete',
-            label: t('recipes.action_delete'),
-            icon: Trash2,
-            variant: 'destructive' as const,
-            onClick: () => setIsDeleteDialogOpen(true),
-            priority: 'low' as const,
-          },
-        ]
-      : []),
-  ];
+
 
   return (
     <Page className="space-y-6">
@@ -458,38 +461,9 @@ export function RecipeDetailPage() {
         actions={<ResponsiveActions items={actions} collapseAt="md" />}
       />
 
-      {/* YouTube Video Embed Preview if sourceUrl is YouTube */}
-      {recipe.sourceUrl && getYouTubeEmbedUrl(recipe.sourceUrl) && (
-        <Card className="overflow-hidden border-slate-200 shadow-xs bg-white">
-          <CardHeader className="py-2.5 px-4 bg-slate-50/80 border-b border-slate-100 flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Video className="h-4 w-4 text-red-600" />
-              <CardTitle className="text-xs font-semibold text-slate-800">
-                {t('recipes.video_preview')}
-              </CardTitle>
-            </div>
-            <a
-              href={recipe.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-slate-500 hover:text-red-600 flex items-center gap-1 transition-colors"
-            >
-              <span>{t('recipes.source_link')}</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </CardHeader>
-          <CardContent className="p-0 bg-black flex justify-center">
-            <div className="w-full max-w-2xl aspect-video">
-              <iframe
-                src={getYouTubeEmbedUrl(recipe.sourceUrl)!}
-                title={recipe.name}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          </CardContent>
-        </Card>
+      {/* YouTube Video Facade Preview (Lazily loaded on click to prevent main-thread blocking and WebGPU warnings) */}
+      {recipe.sourceUrl && (
+        <YouTubePlayerFacade sourceUrl={recipe.sourceUrl} title={recipe.name} />
       )}
 
       {/* Main Tabs */}
@@ -950,24 +924,28 @@ export function RecipeDetailPage() {
       </Tabs>
 
       {/* Modal for editing this recipe */}
-      <RecipeFormModal
-        open={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
-        mode="edit"
-        recipeId={recipe.id}
-        existingRecipeName={recipe.name}
-        initialRecipe={recipe}
-      />
+      {isEditModalOpen && (
+        <RecipeFormModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          mode="edit"
+          recipeId={recipe.id}
+          existingRecipeName={recipe.name}
+          initialRecipe={recipe}
+        />
+      )}
 
       {/* Modal for creating a new version of this recipe */}
-      <RecipeFormModal
-        open={isVersionModalOpen}
-        onOpenChange={setIsVersionModalOpen}
-        mode="new_version"
-        recipeId={recipe.id}
-        existingRecipeName={recipe.name}
-        initialRecipe={recipe}
-      />
+      {isVersionModalOpen && (
+        <RecipeFormModal
+          open={isVersionModalOpen}
+          onOpenChange={setIsVersionModalOpen}
+          mode="new_version"
+          recipeId={recipe.id}
+          existingRecipeName={recipe.name}
+          initialRecipe={recipe}
+        />
+      )}
 
       {/* Reusable Delete Confirmation Modal */}
       <ConfirmModal
