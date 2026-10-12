@@ -8,8 +8,9 @@ set -e
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 
-echo "==> 1. Building Frontend Web Assets..."
+echo "==> 1. Building Frontend Web Assets for Production..."
 cd "$FRONTEND_DIR"
+export VITE_API_BASE_URL="https://the-limited-pork.onrender.com/api/v1"
 npm run build
 
 echo "==> 2. Syncing Capacitor Android..."

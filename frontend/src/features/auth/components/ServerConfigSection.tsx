@@ -15,6 +15,7 @@ export const ServerConfigSection = React.memo(function ServerConfigSection() {
 
   const handleSave = useCallback(() => {
     setCustomApiBaseUrl(serverUrl);
+    setServerUrl(getApiBaseUrl());
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
   }, [serverUrl]);

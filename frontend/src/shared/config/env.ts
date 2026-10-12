@@ -104,25 +104,49 @@ import { Capacitor } from '@capacitor/core';
 
 export const env: AppEnv = parseEnv(import.meta.env as unknown as Record<string, unknown>);
 
-export const DEFAULT_MOBILE_API_URL = 'http://192.168.1.114:8080/api/v1';
+export const DEFAULT_MOBILE_API_URL = 'https://the-limited-pork.onrender.com/api/v1';
+
+export function normalizeApiBaseUrl(rawUrl: string): string {
+  let url = rawUrl.trim().replace(/\/+$/, '');
+  if (!url) return '/api/v1';
+
+  // If it's a full origin or path that doesn't have /api/v1
+  if (/^https?:\/\//i.test(url)) {
+    if (!url.endsWith('/api/v1')) {
+      if (url.endsWith('/api')) {
+        url = `${url}/v1`;
+      } else {
+        url = `${url}/api/v1`;
+      }
+    }
+  } else {
+    // Relative path
+    if (url === '' || url === '/') {
+      url = '/api/v1';
+    } else if (url === '/api') {
+      url = '/api/v1';
+    }
+  }
+  return url;
+}
 
 export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     const custom = localStorage.getItem('API_BASE_URL');
     if (custom && custom.trim() !== '') {
-      return custom.trim().replace(/\/+$/, '');
+      return normalizeApiBaseUrl(custom);
     }
     if (Capacitor.isNativePlatform()) {
-      return DEFAULT_MOBILE_API_URL;
+      return normalizeApiBaseUrl(DEFAULT_MOBILE_API_URL);
     }
   }
-  return env.apiBaseUrl;
+  return normalizeApiBaseUrl(env.apiBaseUrl);
 }
 
 export function setCustomApiBaseUrl(url: string | null): void {
   if (typeof window !== 'undefined') {
     if (url && url.trim() !== '') {
-      localStorage.setItem('API_BASE_URL', url.trim().replace(/\/+$/, ''));
+      localStorage.setItem('API_BASE_URL', normalizeApiBaseUrl(url));
     } else {
       localStorage.removeItem('API_BASE_URL');
     }

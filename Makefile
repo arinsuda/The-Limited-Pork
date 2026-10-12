@@ -113,3 +113,12 @@ endif
 
 test: be-test fe-test ## Run all tests
 lint: be-lint fe-lint ## Run all linters
+
+.PHONY: apk
+ifeq ($(OS),Windows_NT)
+apk: ## Build Android APK pointing to Production stack
+	@powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-apk.ps1
+else
+apk: ## Build Android APK pointing to Production stack
+	@bash ./scripts/build-apk.sh
+endif
