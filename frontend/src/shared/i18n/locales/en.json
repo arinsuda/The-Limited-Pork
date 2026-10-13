@@ -554,7 +554,14 @@
       "title": "Saved Costing History",
       "no_history": "No saved costing calculations yet.",
       "delete_confirm": "Are you sure you want to delete costing calculation \"{{name}}\"?",
-      "loaded_toast": "Costing data loaded successfully"
+      "delete_confirm_title": "Confirm Delete Costing",
+      "delete_confirm_desc": "Are you sure you want to delete costing calculation \"{{name}}\"? This item will be permanently removed.",
+      "delete_success_toast": "Costing calculation deleted successfully",
+      "loaded_toast": "Costing data loaded successfully",
+      "cost_label": "Cost:",
+      "price_label": "Price:",
+      "per_box": "/box",
+      "margin_label": "Margin:"
     },
     "save_modal": {
       "title": "Save Cost Calculation",

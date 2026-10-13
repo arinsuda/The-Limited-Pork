@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { History, Loader2, Trash2, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import {
 } from '@/shared/ui/dialog';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
+import { useConfirm } from '@/shared/ui/confirm-modal';
 import { useCostingsList, useDeleteCosting } from '../hooks/useCostingApi';
 import type { CostCalculation } from '../types/costing';
 
@@ -25,6 +27,7 @@ export const CostingHistoryModal = React.memo(function CostingHistoryModal({
   onSelect,
 }: CostingHistoryModalProps) {
   const { t } = useTranslation();
+  const { confirm } = useConfirm();
   const [search, setSearch] = useState('');
 
   const { data, isLoading } = useCostingsList(1, 50, search);
@@ -41,16 +44,24 @@ export const CostingHistoryModal = React.memo(function CostingHistoryModal({
   const handleDelete = useCallback(
     async (e: React.MouseEvent, item: CostCalculation) => {
       e.stopPropagation();
-      if (!window.confirm(t('costing.history_modal.delete_confirm', { name: item.name }))) {
-        return;
-      }
+      const isConfirmed = await confirm({
+        title: t('costing.history_modal.delete_confirm_title'),
+        description: t('costing.history_modal.delete_confirm_desc', { name: item.name }),
+        confirmLabel: t('common.delete'),
+        cancelLabel: t('common.cancel'),
+        variant: 'destructive',
+      });
+      if (!isConfirmed) return;
+
       try {
         await deleteCosting(item.id);
-      } catch {
-        // error handled by global toast
+        toast.success(t('costing.history_modal.delete_success_toast'));
+      } catch (err: unknown) {
+        const error = err as Error;
+        toast.error(error.message || t('common.error'));
       }
     },
-    [deleteCosting, t],
+    [confirm, deleteCosting, t],
   );
 
   const items = data?.data || [];
@@ -102,10 +113,10 @@ export const CostingHistoryModal = React.memo(function CostingHistoryModal({
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-slate-500">
-                      <span>ต้นทุน: <strong>฿{item.costPerPortion.toFixed(2)}</strong>/กล่อง</span>
-                      <span>ราคาขาย: <strong>฿{item.actualPricePerPortion.toFixed(0)}</strong></span>
+                      <span>{t('costing.history_modal.cost_label')} <strong>฿{item.costPerPortion.toFixed(2)}</strong>{t('costing.history_modal.per_box')}</span>
+                      <span>{t('costing.history_modal.price_label')} <strong>฿{item.actualPricePerPortion.toFixed(0)}</strong></span>
                       <span className="text-emerald-700 font-semibold">
-                        Margin: {item.grossProfitMarginPct.toFixed(1)}%
+                        {t('costing.history_modal.margin_label')} {item.grossProfitMarginPct.toFixed(1)}%
                       </span>
                     </div>
                   </div>

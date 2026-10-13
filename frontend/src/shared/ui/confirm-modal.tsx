@@ -21,6 +21,7 @@ export interface ConfirmModalProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: ConfirmVariant;
+  icon?: React.ReactNode;
   isLoading?: boolean;
   showCancel?: boolean;
   onConfirm: () => void | Promise<void>;
@@ -38,15 +39,23 @@ export function ConfirmModal({
   confirmLabel,
   cancelLabel,
   variant = 'destructive',
+  icon,
   isLoading = false,
   showCancel = true,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
   const { t } = useTranslation();
+  const [internalLoading, setInternalLoading] = useState(false);
+  const isBusy = isLoading || internalLoading;
 
   const handleConfirm = async () => {
-    await onConfirm();
+    try {
+      setInternalLoading(true);
+      await onConfirm();
+    } finally {
+      setInternalLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -92,13 +101,17 @@ export function ConfirmModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent mobileVariant="sheet" className="max-w-md sm:max-w-[440px] p-6 gap-0">
+      <DialogContent
+        mobileVariant="sheet"
+        overlayClassName="z-[100]"
+        className="max-w-md sm:max-w-[440px] p-6 gap-0 z-[100]"
+      >
         <DialogHeader className="space-y-0 text-left">
           <div className="flex items-start gap-4">
             <div
               className={`h-11 w-11 rounded-full ${config.iconBg} flex items-center justify-center shrink-0 mt-0.5 shadow-2xs`}
             >
-              {config.icon}
+              {icon ?? config.icon}
             </div>
             <div className="space-y-1.5 flex-1 pr-4">
               <DialogTitle className="text-base font-bold text-slate-900 leading-snug">
@@ -120,8 +133,8 @@ export function ConfirmModal({
               variant="outline"
               size="sm"
               onClick={handleCancel}
-              disabled={isLoading}
-              className="text-xs text-slate-600 hover:text-slate-900"
+              disabled={isBusy}
+              className="text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
             >
               {cancelLabel ?? t('common.cancel')}
             </Button>
@@ -131,10 +144,10 @@ export function ConfirmModal({
             variant={config.confirmVariant}
             size="sm"
             onClick={handleConfirm}
-            disabled={isLoading}
-            className={`text-xs font-semibold ${config.confirmClass}`}
+            disabled={isBusy}
+            className={`text-xs font-semibold cursor-pointer ${config.confirmClass}`}
           >
-            {isLoading && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+            {isBusy && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
             {confirmLabel ?? t('common.confirm')}
           </Button>
         </DialogFooter>
@@ -153,6 +166,7 @@ export interface ConfirmOptions {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: ConfirmVariant;
+  icon?: React.ReactNode;
 }
 
 export interface AlertOptions {
@@ -160,6 +174,7 @@ export interface AlertOptions {
   description?: React.ReactNode;
   confirmLabel?: string;
   variant?: ConfirmVariant;
+  icon?: React.ReactNode;
 }
 
 interface ConfirmContextValue {
@@ -177,6 +192,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     confirmLabel?: string;
     cancelLabel?: string;
     variant?: ConfirmVariant;
+    icon?: React.ReactNode;
     showCancel: boolean;
   }>({
     isOpen: false,
@@ -196,6 +212,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
         confirmLabel: options.confirmLabel,
         cancelLabel: options.cancelLabel,
         variant: options.variant ?? 'destructive',
+        icon: options.icon,
         showCancel: true,
       });
     });
@@ -210,6 +227,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
         description: options.description,
         confirmLabel: options.confirmLabel,
         variant: options.variant ?? 'info',
+        icon: options.icon,
         showCancel: false,
       });
     });
@@ -244,6 +262,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
         confirmLabel={modalState.confirmLabel}
         cancelLabel={modalState.cancelLabel}
         variant={modalState.variant}
+        icon={modalState.icon}
         showCancel={modalState.showCancel}
         onConfirm={handleConfirm}
         onCancel={handleCancel}

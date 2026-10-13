@@ -84,14 +84,21 @@ export interface DialogContentProps
   hideClose?: boolean;
   /** Responsive mobile rendering: 'fullPage' = full new page view; 'sheet' = bottom sheet. Defaults to 'fullPage'. */
   mobileVariant?: DialogMobileVariant;
+  /** Custom class for the backdrop overlay */
+  overlayClassName?: string;
 }
 
 export const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, DialogContentProps>(
-  ({ className, children, size, mobileVariant = 'fullPage', hideClose = false, ...props }, ref) => {
+  ({ className, children, size, mobileVariant = 'fullPage', hideClose = false, overlayClassName, ...props }, ref) => {
     const { t } = useTranslation();
     return (
       <DialogPortal>
-        <DialogOverlay className={cn(mobileVariant === 'fullPage' && 'max-sm:bg-slate-50 max-sm:backdrop-blur-none')} />
+        <DialogOverlay
+          className={cn(
+            mobileVariant === 'fullPage' && 'max-sm:bg-slate-50 max-sm:backdrop-blur-none',
+            overlayClassName,
+          )}
+        />
         <DialogPrimitive.Content
           ref={ref}
           className={cn(dialogContentVariants({ size, mobileVariant }), className)}
