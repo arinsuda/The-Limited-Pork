@@ -33,8 +33,7 @@ export function useCosting(id?: string) {
     queryKey: ['costing', id],
     queryFn: async () => {
       if (!id) throw new Error('Costing ID is required');
-      const res = await request<{ data: CostCalculation }>(`/costings/${id}`);
-      return res.data;
+      return request<CostCalculation>(`/costings/${id}`);
     },
     enabled: Boolean(id),
   });
@@ -44,11 +43,10 @@ export function useCreateCosting() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CostingFormValues) => {
-      const res = await request<{ data: CostCalculation }>('/costings', {
+      return request<CostCalculation>('/costings', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['costings'] });
@@ -60,11 +58,10 @@ export function useUpdateCosting() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: CostingFormValues }) => {
-      const res = await request<{ data: CostCalculation }>(`/costings/${id}`, {
+      return request<CostCalculation>(`/costings/${id}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
-      return res.data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['costings'] });
@@ -90,10 +87,9 @@ export function useDeleteCosting() {
 export function useRecipeCostingTemplate() {
   return useMutation({
     mutationFn: async (recipeId: string) => {
-      const res = await request<{ data: CostCalculation }>(
+      return request<CostCalculation>(
         `/costings/recipe-template/${recipeId}`,
       );
-      return res.data;
     },
   });
 }
