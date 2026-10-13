@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { IngredientRow } from './IngredientRow';
 import type { IngredientCostItem } from '../types/costing';
+import type { MasterDataUnit } from '../hooks/useCostingApi';
 
 interface IngredientsCostSectionProps {
   ingredients: IngredientCostItem[];
+  units?: MasterDataUnit[];
   totalCost: number;
   onAdd: () => void;
   onUpdate: (id: string, updates: Partial<IngredientCostItem>) => void;
@@ -16,6 +18,7 @@ interface IngredientsCostSectionProps {
 
 export const IngredientsCostSection = React.memo(function IngredientsCostSection({
   ingredients,
+  units = [],
   totalCost,
   onAdd,
   onUpdate,
@@ -71,6 +74,7 @@ export const IngredientsCostSection = React.memo(function IngredientsCostSection
                 <IngredientRow
                   key={item.id}
                   item={item}
+                  units={units}
                   onUpdate={onUpdate}
                   onRemove={onRemove}
                 />

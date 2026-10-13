@@ -1,20 +1,42 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { Input } from '@/shared/ui/input';
 import { Button } from '@/shared/ui/button';
 import type { IngredientCostItem } from '../types/costing';
+import type { MasterDataUnit } from '../hooks/useCostingApi';
 
 interface IngredientRowProps {
   item: IngredientCostItem;
+  units?: MasterDataUnit[];
   onUpdate: (id: string, updates: Partial<IngredientCostItem>) => void;
   onRemove: (id: string) => void;
 }
 
 export const IngredientRow = React.memo(function IngredientRow({
   item,
+  units = [],
   onUpdate,
   onRemove,
 }: IngredientRowProps) {
+  const { t, i18n } = useTranslation();
+  const isThai = i18n.language === 'th';
+
+  const handleUnitChange = (val: string) => {
+    const found = units.find((u) => u.id === val || u.symbol === val || u.code === val || u.nameTh === val);
+    if (found) {
+      onUpdate(item.id, {
+        unitId: found.id,
+        unitName: found.symbol || (isThai ? found.nameTh : found.nameEn),
+      });
+    } else {
+      onUpdate(item.id, { unitName: val });
+    }
+  };
+
+  // Determine current select value
+  const selectedUnitValue = item.unitId || (units.find((u) => u.symbol === item.unitName || u.nameTh === item.unitName)?.id) || item.unitName;
+
   return (
     <tr className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
       {/* Name */}
@@ -22,7 +44,7 @@ export const IngredientRow = React.memo(function IngredientRow({
         <Input
           value={item.ingredientName}
           onChange={(e) => onUpdate(item.id, { ingredientName: e.target.value })}
-          placeholder="ชื่อวัตถุดิบ"
+          placeholder={t('costing.ingredients_section.name')}
           className="text-xs h-8.5 bg-white"
         />
       </td>
@@ -39,14 +61,31 @@ export const IngredientRow = React.memo(function IngredientRow({
         />
       </td>
 
-      {/* Unit */}
-      <td className="py-2.5 px-2 w-20">
-        <Input
-          value={item.unitName}
-          onChange={(e) => onUpdate(item.id, { unitName: e.target.value })}
-          placeholder="กก."
-          className="text-xs h-8.5 text-center bg-white"
-        />
+      {/* Unit Selector from Database Master Data */}
+      <td className="py-2.5 px-2 w-28">
+        <select
+          value={selectedUnitValue}
+          onChange={(e) => handleUnitChange(e.target.value)}
+          className="w-full text-xs h-8.5 px-2 bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500 font-medium text-slate-800 cursor-pointer"
+        >
+          {/* Custom option if item has a unit not in the master list */}
+          {item.unitName && !units.some((u) => u.id === item.unitId || u.symbol === item.unitName || u.nameTh === item.unitName) && (
+            <option value={item.unitName}>{item.unitName}</option>
+          )}
+
+          {units.length > 0 ? (
+            units.map((u) => {
+              const label = u.symbol ? `${u.symbol} (${isThai ? u.nameTh : u.nameEn})` : (isThai ? u.nameTh : u.nameEn);
+              return (
+                <option key={u.id} value={u.id}>
+                  {label}
+                </option>
+              );
+            })
+          ) : (
+            <option value={item.unitName || 'กก.'}>{item.unitName || 'กก.'}</option>
+          )}
+        </select>
       </td>
 
       {/* Unit Price */}

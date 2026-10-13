@@ -105,3 +105,23 @@ export function useRecipesSelection() {
     },
   });
 }
+
+export interface MasterDataUnit {
+  id: string;
+  code: string;
+  symbol: string;
+  nameTh: string;
+  nameEn: string;
+  physicalDimension?: string;
+  conversionFactorToBase?: number;
+}
+
+export function useUnits() {
+  return useQuery({
+    queryKey: ['units', 'active'],
+    queryFn: async () => {
+      return request<MasterDataUnit[]>('/units');
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}

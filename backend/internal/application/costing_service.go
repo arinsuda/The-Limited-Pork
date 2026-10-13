@@ -24,6 +24,7 @@ type CostingInput struct {
 	WastagePct      float64                      `json:"wastagePct"`
 	Ingredients     []costing.IngredientCostItem `json:"ingredients"`
 	Operations      []costing.OperationCostItem  `json:"operations"`
+	Sauces          []costing.SauceCostItem      `json:"sauces"`
 	Packaging       []costing.PackagingCostItem  `json:"packaging"`
 	PortionWeightG  float64                      `json:"portionWeightG"`
 	TargetFoodCostPct float64                    `json:"targetFoodCostPct"`
@@ -67,6 +68,7 @@ func (s *CostingService) buildEntity(req CostingInput) *costing.CostCalculation 
 		WastagePct:            req.WastagePct,
 		Ingredients:           req.Ingredients,
 		Operations:            req.Operations,
+		Sauces:                req.Sauces,
 		Packaging:             req.Packaging,
 		PortionWeightG:        req.PortionWeightG,
 		TargetFoodCostPct:     req.TargetFoodCostPct,
@@ -79,6 +81,9 @@ func (s *CostingService) buildEntity(req CostingInput) *costing.CostCalculation 
 	}
 	if calc.Operations == nil {
 		calc.Operations = []costing.OperationCostItem{}
+	}
+	if calc.Sauces == nil {
+		calc.Sauces = []costing.SauceCostItem{}
 	}
 	if calc.Packaging == nil {
 		calc.Packaging = []costing.PackagingCostItem{}
@@ -93,6 +98,11 @@ func (s *CostingService) buildEntity(req CostingInput) *costing.CostCalculation 
 	for i := range calc.Operations {
 		if calc.Operations[i].ID == "" {
 			calc.Operations[i].ID = s.idGen.NewUUID().String()
+		}
+	}
+	for i := range calc.Sauces {
+		if calc.Sauces[i].ID == "" {
+			calc.Sauces[i].ID = s.idGen.NewUUID().String()
 		}
 	}
 	for i := range calc.Packaging {
@@ -254,29 +264,71 @@ func (s *CostingService) GetRecipeTemplate(ctx context.Context, recipeID uuid.UU
 		},
 	}
 
+	isSauce := strings.Contains(rec.Name, "น้ำจิ้ม") || strings.Contains(rec.Name, "ซอส")
+
+	var sauces []costing.SauceCostItem
+	var portionWeight float64 = 150.0
+	var actualPrice float64 = 120.0
+
 	// Standard packaging defaults
-	packaging := []costing.PackagingCostItem{
-		{
-			ID:        s.idGen.NewUUID().String(),
-			Name:      "กล่องกระดาษคราฟท์ฟู้ดเกรด + กระดาษซับมัน",
-			UnitPrice: 3.5,
-			Quantity:  40.0,
-			TotalCost: 140.0,
-		},
-		{
-			ID:        s.idGen.NewUUID().String(),
-			Name:      "ถ้วยน้ำจิ้ม 2oz + ฝาปิด",
-			UnitPrice: 1.0,
-			Quantity:  40.0,
-			TotalCost: 40.0,
-		},
-		{
-			ID:        s.idGen.NewUUID().String(),
-			Name:      "สติ๊กเกอร์โลโก้แบรนด์ หมูกรอบ มี จำกัด",
-			UnitPrice: 0.5,
-			Quantity:  40.0,
-			TotalCost: 20.0,
-		},
+	var packaging []costing.PackagingCostItem
+
+	if isSauce {
+		portionWeight = 30.0
+		actualPrice = 15.0
+		sauces = []costing.SauceCostItem{}
+		packaging = []costing.PackagingCostItem{
+			{
+				ID:        s.idGen.NewUUID().String(),
+				Name:      "ถ้วยน้ำจิ้ม 2oz + ฝาปิด",
+				UnitPrice: 1.0,
+				Quantity:  16.0,
+				TotalCost: 16.0,
+			},
+		}
+	} else {
+		// Crispy pork includes multiple dipping sauces
+		sauces = []costing.SauceCostItem{
+			{
+				ID:          s.idGen.NewUUID().String(),
+				Name:        "น้ำจิ้มซีอิ๊วดำหวานพริกดอง (30 ml)",
+				PortionSize: "30 ml",
+				UnitCost:    2.5,
+				Quantity:    40.0,
+				TotalCost:   100.0,
+			},
+			{
+				ID:          s.idGen.NewUUID().String(),
+				Name:        "น้ำจิ้มซีฟู้ดมะนาวสด (30 ml)",
+				PortionSize: "30 ml",
+				UnitCost:    3.2,
+				Quantity:    40.0,
+				TotalCost:   128.0,
+			},
+		}
+		packaging = []costing.PackagingCostItem{
+			{
+				ID:        s.idGen.NewUUID().String(),
+				Name:      "กล่องกระดาษคราฟท์ฟู้ดเกรด + กระดาษซับมัน",
+				UnitPrice: 3.5,
+				Quantity:  40.0,
+				TotalCost: 140.0,
+			},
+			{
+				ID:        s.idGen.NewUUID().String(),
+				Name:      "ถ้วยน้ำจิ้ม 2oz + ฝาปิด",
+				UnitPrice: 1.0,
+				Quantity:  40.0,
+				TotalCost: 40.0,
+			},
+			{
+				ID:        s.idGen.NewUUID().String(),
+				Name:      "สติ๊กเกอร์โลโก้แบรนด์ หมูกรอบ มี จำกัด",
+				UnitPrice: 0.5,
+				Quantity:  40.0,
+				TotalCost: 20.0,
+			},
+		}
 	}
 
 	calc := &costing.CostCalculation{
@@ -291,11 +343,12 @@ func (s *CostingService) GetRecipeTemplate(ctx context.Context, recipeID uuid.UU
 		WastagePct:            3.0,
 		Ingredients:           ingredients,
 		Operations:            operations,
+		Sauces:                sauces,
 		Packaging:             packaging,
-		PortionWeightG:        150.0,
+		PortionWeightG:        portionWeight,
 		TargetFoodCostPct:     35.0,
 		TargetMarginPct:       65.0,
-		ActualPricePerPortion: 120.0,
+		ActualPricePerPortion: actualPrice,
 		CreatedAt:             s.clock.Now(),
 		UpdatedAt:             s.clock.Now(),
 	}

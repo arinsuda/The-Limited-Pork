@@ -5,6 +5,7 @@ import type {
   IngredientCostItem,
   OperationCostItem,
   PackagingCostItem,
+  SauceCostItem,
 } from '../types/costing';
 
 export const DEFAULT_CRISPY_PORK_COSTING: CostingFormValues = {
@@ -71,6 +72,24 @@ export const DEFAULT_CRISPY_PORK_COSTING: CostingFormValues = {
       rate: 5.0,
       usage: 3.0,
       totalCost: 15.0,
+    },
+  ],
+  sauces: [
+    {
+      id: 'sauce-1',
+      name: 'น้ำจิ้มซีอิ๊วดำหวานพริกดอง (สูตรโบราณ)',
+      portionSize: '30 ml',
+      unitCost: 2.5,
+      quantity: 40.0,
+      totalCost: 100.0,
+    },
+    {
+      id: 'sauce-2',
+      name: 'น้ำจิ้มซีฟู้ดมะนาวสดแท้ (ตัดเลี่ยน)',
+      portionSize: '30 ml',
+      unitCost: 3.2,
+      quantity: 40.0,
+      totalCost: 128.0,
     },
   ],
   packaging: [
@@ -142,7 +161,16 @@ export function useCostCalculation(initialValues: CostingFormValues = DEFAULT_CR
       operations.reduce((sum, item) => sum + item.totalCost, 0),
     );
 
-    // 4. Packaging Cost
+    // 4. Sauces Cost
+    const sauces: SauceCostItem[] = (formValues.sauces || []).map((s) => {
+      const totalCost = round2((s.unitCost || 0) * (s.quantity || 0));
+      return { ...s, totalCost };
+    });
+    const saucesTotalCost = round2(
+      sauces.reduce((sum, item) => sum + item.totalCost, 0),
+    );
+
+    // 5. Packaging Cost
     const packaging: PackagingCostItem[] = formValues.packaging.map((pkg) => {
       const totalCost = round2((pkg.unitPrice || 0) * (pkg.quantity || 0));
       return { ...pkg, totalCost };
@@ -151,21 +179,21 @@ export function useCostCalculation(initialValues: CostingFormValues = DEFAULT_CR
       packaging.reduce((sum, item) => sum + item.totalCost, 0),
     );
 
-    // 5. Wastage & Total Batch Cost
+    // 6. Wastage & Total Batch Cost
     const wastagePct = Math.max(0, formValues.wastagePct || 0);
     const wastageTotalCost = round2(
       (ingredientsTotalCost + operationsTotalCost) * (wastagePct / 100.0),
     );
     const totalBatchCost = round2(
-      ingredientsTotalCost + operationsTotalCost + packagingTotalCost + wastageTotalCost,
+      ingredientsTotalCost + operationsTotalCost + packagingTotalCost + saucesTotalCost + wastageTotalCost,
     );
 
-    // 6. Portioning
+    // 7. Portioning
     const portionWeightG = Math.max(1, formValues.portionWeightG || 150);
     const totalPortions = cookedWeightKg > 0 ? round2((cookedWeightKg * 1000.0) / portionWeightG) : 0;
     const costPerPortion = totalPortions > 0 ? round2(totalBatchCost / totalPortions) : 0;
 
-    // 7. Pricing Recommendations
+    // 8. Pricing Recommendations
     const targetFoodCostPct = Math.max(1, formValues.targetFoodCostPct || 35);
     const recommendedPriceByFoodCost =
       costPerPortion > 0 ? round2(costPerPortion / (targetFoodCostPct / 100.0)) : 0;
@@ -174,7 +202,7 @@ export function useCostCalculation(initialValues: CostingFormValues = DEFAULT_CR
     const recommendedPriceByMargin =
       costPerPortion > 0 ? round2(costPerPortion / (1.0 - targetMarginPct / 100.0)) : 0;
 
-    // 8. Actual Price & Margins
+    // 9. Actual Price & Margins
     const actualPrice = Math.max(0, formValues.actualPricePerPortion || 0);
     const grossProfitPerPortion = actualPrice > 0 ? round2(actualPrice - costPerPortion) : 0;
     const grossProfitMarginPct =
@@ -198,9 +226,11 @@ export function useCostCalculation(initialValues: CostingFormValues = DEFAULT_CR
       wastagePct,
       ingredients,
       operations,
+      sauces,
       packaging,
       ingredientsTotalCost,
       operationsTotalCost,
+      saucesTotalCost,
       packagingTotalCost,
       wastageTotalCost,
       totalBatchCost,
@@ -336,6 +366,41 @@ export function useCostCalculation(initialValues: CostingFormValues = DEFAULT_CR
     }));
   }, []);
 
+  // Sauce mutations
+  const addSauce = useCallback((item?: Partial<SauceCostItem>) => {
+    setFormValues((prev) => ({
+      ...prev,
+      sauces: [
+        ...(prev.sauces || []),
+        {
+          id: `sauce-${Date.now()}`,
+          name: item?.name || '',
+          portionSize: item?.portionSize || '30 ml',
+          unitCost: item?.unitCost || 0,
+          quantity: item?.quantity || 40.0,
+          totalCost: 0,
+          ...item,
+        },
+      ],
+    }));
+  }, []);
+
+  const updateSauce = useCallback((id: string, updates: Partial<SauceCostItem>) => {
+    setFormValues((prev) => ({
+      ...prev,
+      sauces: (prev.sauces || []).map((item) =>
+        item.id === id ? { ...item, ...updates } : item,
+      ),
+    }));
+  }, []);
+
+  const removeSauce = useCallback((id: string) => {
+    setFormValues((prev) => ({
+      ...prev,
+      sauces: (prev.sauces || []).filter((item) => item.id !== id),
+    }));
+  }, []);
+
   // Load calculation
   const loadCalculation = useCallback((data: CostingFormValues | CostCalculation) => {
     setFormValues({
@@ -351,6 +416,7 @@ export function useCostCalculation(initialValues: CostingFormValues = DEFAULT_CR
       wastagePct: data.wastagePct,
       ingredients: data.ingredients || [],
       operations: data.operations || [],
+      sauces: data.sauces || [],
       packaging: data.packaging || [],
       portionWeightG: data.portionWeightG,
       targetFoodCostPct: data.targetFoodCostPct,
@@ -373,6 +439,9 @@ export function useCostCalculation(initialValues: CostingFormValues = DEFAULT_CR
     addOperation,
     updateOperation,
     removeOperation,
+    addSauce,
+    updateSauce,
+    removeSauce,
     addPackaging,
     updatePackaging,
     removePackaging,

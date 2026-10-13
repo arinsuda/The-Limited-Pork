@@ -39,46 +39,50 @@ func (r *CostingRepo) Create(ctx context.Context, c *costing.CostCalculation) er
 	if err != nil {
 		return fmt.Errorf("failed to marshal packaging: %w", err)
 	}
+	saucesJSON, err := json.Marshal(c.Sauces)
+	if err != nil {
+		return fmt.Errorf("failed to marshal sauces: %w", err)
+	}
 
 	query := `
 		INSERT INTO cost_calculations (
 			id, name, recipe_id, recipe_version_id, notes,
 			raw_weight_kg, cooked_weight_kg, yield_pct, shrinkage_pct, wastage_pct,
-			ingredients_total_cost, operations_total_cost, packaging_total_cost, wastage_total_cost,
+			ingredients_total_cost, operations_total_cost, packaging_total_cost, sauces_total_cost, wastage_total_cost,
 			total_batch_cost, cost_per_raw_kg, cost_per_cooked_kg,
 			portion_weight_g, total_portions, cost_per_portion,
 			target_food_cost_pct, recommended_price_by_food_cost,
 			target_margin_pct, recommended_price_by_margin,
 			actual_price_per_portion, gross_profit_per_portion, gross_profit_margin_pct, actual_food_cost_pct,
 			total_batch_revenue, total_batch_gross_profit, break_even_portions,
-			ingredients_data, operations_data, packaging_data,
+			ingredients_data, operations_data, packaging_data, sauces_data,
 			created_by, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, $8, $9, $10,
-			$11, $12, $13, $14,
-			$15, $16, $17,
-			$18, $19, $20,
-			$21, $22,
-			$23, $24,
-			$25, $26, $27, $28,
-			$29, $30, $31,
-			$32, $33, $34,
-			$35, $36, $37
+			$11, $12, $13, $14, $15,
+			$16, $17, $18,
+			$19, $20, $21,
+			$22, $23,
+			$24, $25,
+			$26, $27, $28, $29,
+			$30, $31, $32,
+			$33, $34, $35, $36,
+			$37, $38, $39
 		)
 	`
 
 	_, err = q.Exec(ctx, query,
 		c.ID, c.Name, c.RecipeID, c.RecipeVersionID, c.Notes,
 		c.RawWeightKG, c.CookedWeightKG, c.YieldPct, c.ShrinkagePct, c.WastagePct,
-		c.IngredientsTotalCost, c.OperationsTotalCost, c.PackagingTotalCost, c.WastageTotalCost,
+		c.IngredientsTotalCost, c.OperationsTotalCost, c.PackagingTotalCost, c.SaucesTotalCost, c.WastageTotalCost,
 		c.TotalBatchCost, c.CostPerRawKG, c.CostPerCookedKG,
 		c.PortionWeightG, c.TotalPortions, c.CostPerPortion,
 		c.TargetFoodCostPct, c.RecommendedPriceByFoodCost,
 		c.TargetMarginPct, c.RecommendedPriceByMargin,
 		c.ActualPricePerPortion, c.GrossProfitPerPortion, c.GrossProfitMarginPct, c.ActualFoodCostPct,
 		c.TotalBatchRevenue, c.TotalBatchGrossProfit, c.BreakEvenPortions,
-		ingJSON, opsJSON, pkgJSON,
+		ingJSON, opsJSON, pkgJSON, saucesJSON,
 		c.CreatedBy, c.CreatedAt, c.UpdatedAt,
 	)
 	if err != nil {
@@ -95,14 +99,14 @@ func (r *CostingRepo) GetByID(ctx context.Context, id uuid.UUID) (*costing.CostC
 		SELECT 
 			c.id, c.name, c.recipe_id, c.recipe_version_id, c.notes,
 			c.raw_weight_kg, c.cooked_weight_kg, c.yield_pct, c.shrinkage_pct, c.wastage_pct,
-			c.ingredients_total_cost, c.operations_total_cost, c.packaging_total_cost, c.wastage_total_cost,
+			c.ingredients_total_cost, c.operations_total_cost, c.packaging_total_cost, c.sauces_total_cost, c.wastage_total_cost,
 			c.total_batch_cost, c.cost_per_raw_kg, c.cost_per_cooked_kg,
 			c.portion_weight_g, c.total_portions, c.cost_per_portion,
 			c.target_food_cost_pct, c.recommended_price_by_food_cost,
 			c.target_margin_pct, c.recommended_price_by_margin,
 			c.actual_price_per_portion, c.gross_profit_per_portion, c.gross_profit_margin_pct, c.actual_food_cost_pct,
 			c.total_batch_revenue, c.total_batch_gross_profit, c.break_even_portions,
-			c.ingredients_data, c.operations_data, c.packaging_data,
+			c.ingredients_data, c.operations_data, c.packaging_data, c.sauces_data,
 			c.created_by, c.created_at, c.updated_at,
 			COALESCE(rec.name, '') as recipe_name
 		FROM cost_calculations c
@@ -111,19 +115,19 @@ func (r *CostingRepo) GetByID(ctx context.Context, id uuid.UUID) (*costing.CostC
 	`
 
 	var c costing.CostCalculation
-	var ingJSON, opsJSON, pkgJSON []byte
+	var ingJSON, opsJSON, pkgJSON, saucesJSON []byte
 
 	err := q.QueryRow(ctx, query, id).Scan(
 		&c.ID, &c.Name, &c.RecipeID, &c.RecipeVersionID, &c.Notes,
 		&c.RawWeightKG, &c.CookedWeightKG, &c.YieldPct, &c.ShrinkagePct, &c.WastagePct,
-		&c.IngredientsTotalCost, &c.OperationsTotalCost, &c.PackagingTotalCost, &c.WastageTotalCost,
+		&c.IngredientsTotalCost, &c.OperationsTotalCost, &c.PackagingTotalCost, &c.SaucesTotalCost, &c.WastageTotalCost,
 		&c.TotalBatchCost, &c.CostPerRawKG, &c.CostPerCookedKG,
 		&c.PortionWeightG, &c.TotalPortions, &c.CostPerPortion,
 		&c.TargetFoodCostPct, &c.RecommendedPriceByFoodCost,
 		&c.TargetMarginPct, &c.RecommendedPriceByMargin,
 		&c.ActualPricePerPortion, &c.GrossProfitPerPortion, &c.GrossProfitMarginPct, &c.ActualFoodCostPct,
 		&c.TotalBatchRevenue, &c.TotalBatchGrossProfit, &c.BreakEvenPortions,
-		&ingJSON, &opsJSON, &pkgJSON,
+		&ingJSON, &opsJSON, &pkgJSON, &saucesJSON,
 		&c.CreatedBy, &c.CreatedAt, &c.UpdatedAt,
 		&c.RecipeName,
 	)
@@ -137,6 +141,7 @@ func (r *CostingRepo) GetByID(ctx context.Context, id uuid.UUID) (*costing.CostC
 	_ = json.Unmarshal(ingJSON, &c.Ingredients)
 	_ = json.Unmarshal(opsJSON, &c.Operations)
 	_ = json.Unmarshal(pkgJSON, &c.Packaging)
+	_ = json.Unmarshal(saucesJSON, &c.Sauces)
 
 	return &c, nil
 }
@@ -156,34 +161,38 @@ func (r *CostingRepo) Update(ctx context.Context, c *costing.CostCalculation) er
 	if err != nil {
 		return fmt.Errorf("failed to marshal packaging: %w", err)
 	}
+	saucesJSON, err := json.Marshal(c.Sauces)
+	if err != nil {
+		return fmt.Errorf("failed to marshal sauces: %w", err)
+	}
 
 	query := `
 		UPDATE cost_calculations SET
 			name = $2, recipe_id = $3, recipe_version_id = $4, notes = $5,
 			raw_weight_kg = $6, cooked_weight_kg = $7, yield_pct = $8, shrinkage_pct = $9, wastage_pct = $10,
-			ingredients_total_cost = $11, operations_total_cost = $12, packaging_total_cost = $13, wastage_total_cost = $14,
-			total_batch_cost = $15, cost_per_raw_kg = $16, cost_per_cooked_kg = $17,
-			portion_weight_g = $18, total_portions = $19, cost_per_portion = $20,
-			target_food_cost_pct = $21, recommended_price_by_food_cost = $22,
-			target_margin_pct = $23, recommended_price_by_margin = $24,
-			actual_price_per_portion = $25, gross_profit_per_portion = $26, gross_profit_margin_pct = $27, actual_food_cost_pct = $28,
-			total_batch_revenue = $29, total_batch_gross_profit = $30, break_even_portions = $31,
-			ingredients_data = $32, operations_data = $33, packaging_data = $34,
-			updated_at = $35
+			ingredients_total_cost = $11, operations_total_cost = $12, packaging_total_cost = $13, sauces_total_cost = $14, wastage_total_cost = $15,
+			total_batch_cost = $16, cost_per_raw_kg = $17, cost_per_cooked_kg = $18,
+			portion_weight_g = $19, total_portions = $20, cost_per_portion = $21,
+			target_food_cost_pct = $22, recommended_price_by_food_cost = $23,
+			target_margin_pct = $24, recommended_price_by_margin = $25,
+			actual_price_per_portion = $26, gross_profit_per_portion = $27, gross_profit_margin_pct = $28, actual_food_cost_pct = $29,
+			total_batch_revenue = $30, total_batch_gross_profit = $31, break_even_portions = $32,
+			ingredients_data = $33, operations_data = $34, packaging_data = $35, sauces_data = $36,
+			updated_at = $37
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	res, err := q.Exec(ctx, query,
 		c.ID, c.Name, c.RecipeID, c.RecipeVersionID, c.Notes,
 		c.RawWeightKG, c.CookedWeightKG, c.YieldPct, c.ShrinkagePct, c.WastagePct,
-		c.IngredientsTotalCost, c.OperationsTotalCost, c.PackagingTotalCost, c.WastageTotalCost,
+		c.IngredientsTotalCost, c.OperationsTotalCost, c.PackagingTotalCost, c.SaucesTotalCost, c.WastageTotalCost,
 		c.TotalBatchCost, c.CostPerRawKG, c.CostPerCookedKG,
 		c.PortionWeightG, c.TotalPortions, c.CostPerPortion,
 		c.TargetFoodCostPct, c.RecommendedPriceByFoodCost,
 		c.TargetMarginPct, c.RecommendedPriceByMargin,
 		c.ActualPricePerPortion, c.GrossProfitPerPortion, c.GrossProfitMarginPct, c.ActualFoodCostPct,
 		c.TotalBatchRevenue, c.TotalBatchGrossProfit, c.BreakEvenPortions,
-		ingJSON, opsJSON, pkgJSON,
+		ingJSON, opsJSON, pkgJSON, saucesJSON,
 		time.Now(),
 	)
 	if err != nil {
@@ -247,14 +256,14 @@ func (r *CostingRepo) List(ctx context.Context, filter costing.ListFilter, page 
 		SELECT 
 			c.id, c.name, c.recipe_id, c.recipe_version_id, c.notes,
 			c.raw_weight_kg, c.cooked_weight_kg, c.yield_pct, c.shrinkage_pct, c.wastage_pct,
-			c.ingredients_total_cost, c.operations_total_cost, c.packaging_total_cost, c.wastage_total_cost,
+			c.ingredients_total_cost, c.operations_total_cost, c.packaging_total_cost, c.sauces_total_cost, c.wastage_total_cost,
 			c.total_batch_cost, c.cost_per_raw_kg, c.cost_per_cooked_kg,
 			c.portion_weight_g, c.total_portions, c.cost_per_portion,
 			c.target_food_cost_pct, c.recommended_price_by_food_cost,
 			c.target_margin_pct, c.recommended_price_by_margin,
 			c.actual_price_per_portion, c.gross_profit_per_portion, c.gross_profit_margin_pct, c.actual_food_cost_pct,
 			c.total_batch_revenue, c.total_batch_gross_profit, c.break_even_portions,
-			c.ingredients_data, c.operations_data, c.packaging_data,
+			c.ingredients_data, c.operations_data, c.packaging_data, c.sauces_data,
 			c.created_by, c.created_at, c.updated_at,
 			COALESCE(rec.name, '') as recipe_name
 		FROM cost_calculations c
@@ -275,19 +284,19 @@ func (r *CostingRepo) List(ctx context.Context, filter costing.ListFilter, page 
 	items := make([]costing.CostCalculation, 0)
 	for rows.Next() {
 		var c costing.CostCalculation
-		var ingJSON, opsJSON, pkgJSON []byte
+		var ingJSON, opsJSON, pkgJSON, saucesJSON []byte
 
 		err := rows.Scan(
 			&c.ID, &c.Name, &c.RecipeID, &c.RecipeVersionID, &c.Notes,
 			&c.RawWeightKG, &c.CookedWeightKG, &c.YieldPct, &c.ShrinkagePct, &c.WastagePct,
-			&c.IngredientsTotalCost, &c.OperationsTotalCost, &c.PackagingTotalCost, &c.WastageTotalCost,
+			&c.IngredientsTotalCost, &c.OperationsTotalCost, &c.PackagingTotalCost, &c.SaucesTotalCost, &c.WastageTotalCost,
 			&c.TotalBatchCost, &c.CostPerRawKG, &c.CostPerCookedKG,
 			&c.PortionWeightG, &c.TotalPortions, &c.CostPerPortion,
 			&c.TargetFoodCostPct, &c.RecommendedPriceByFoodCost,
 			&c.TargetMarginPct, &c.RecommendedPriceByMargin,
 			&c.ActualPricePerPortion, &c.GrossProfitPerPortion, &c.GrossProfitMarginPct, &c.ActualFoodCostPct,
 			&c.TotalBatchRevenue, &c.TotalBatchGrossProfit, &c.BreakEvenPortions,
-			&ingJSON, &opsJSON, &pkgJSON,
+			&ingJSON, &opsJSON, &pkgJSON, &saucesJSON,
 			&c.CreatedBy, &c.CreatedAt, &c.UpdatedAt,
 			&c.RecipeName,
 		)
@@ -298,6 +307,7 @@ func (r *CostingRepo) List(ctx context.Context, filter costing.ListFilter, page 
 		_ = json.Unmarshal(ingJSON, &c.Ingredients)
 		_ = json.Unmarshal(opsJSON, &c.Operations)
 		_ = json.Unmarshal(pkgJSON, &c.Packaging)
+		_ = json.Unmarshal(saucesJSON, &c.Sauces)
 
 		items = append(items, c)
 	}

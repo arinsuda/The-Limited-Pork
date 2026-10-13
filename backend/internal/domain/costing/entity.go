@@ -44,6 +44,16 @@ type PackagingCostItem struct {
 	TotalCost float64 `json:"totalCost"`
 }
 
+type SauceCostItem struct {
+	ID          string     `json:"id"`
+	RecipeID    *uuid.UUID `json:"recipeId,omitempty"`
+	Name        string     `json:"name"`
+	PortionSize string     `json:"portionSize"`
+	UnitCost    float64    `json:"unitCost"`
+	Quantity    float64    `json:"quantity"`
+	TotalCost   float64    `json:"totalCost"`
+}
+
 type CostCalculation struct {
 	ID              uuid.UUID  `json:"id"`
 	Name            string     `json:"name"`
@@ -62,11 +72,13 @@ type CostCalculation struct {
 	// Itemized lists
 	Ingredients []IngredientCostItem `json:"ingredients"`
 	Operations  []OperationCostItem  `json:"operations"`
+	Sauces      []SauceCostItem      `json:"sauces"`
 	Packaging   []PackagingCostItem  `json:"packaging"`
 
 	// Calculated Cost Breakdown
 	IngredientsTotalCost float64 `json:"ingredientsTotalCost"`
 	OperationsTotalCost  float64 `json:"operationsTotalCost"`
+	SaucesTotalCost      float64 `json:"saucesTotalCost"`
 	PackagingTotalCost   float64 `json:"packagingTotalCost"`
 	WastageTotalCost     float64 `json:"wastageTotalCost"`
 	TotalBatchCost       float64 `json:"totalBatchCost"`
@@ -144,7 +156,15 @@ func (c *CostCalculation) Calculate() {
 	}
 	c.OperationsTotalCost = round2(opsTotal)
 
-	// 4. Packaging Cost
+	// 4. Sauces Cost
+	var saucesTotal float64
+	for i := range c.Sauces {
+		c.Sauces[i].TotalCost = round2(c.Sauces[i].UnitCost * c.Sauces[i].Quantity)
+		saucesTotal += c.Sauces[i].TotalCost
+	}
+	c.SaucesTotalCost = round2(saucesTotal)
+
+	// 5. Packaging Cost
 	var pkgTotal float64
 	for i := range c.Packaging {
 		c.Packaging[i].TotalCost = round2(c.Packaging[i].UnitPrice * c.Packaging[i].Quantity)
@@ -152,9 +172,9 @@ func (c *CostCalculation) Calculate() {
 	}
 	c.PackagingTotalCost = round2(pkgTotal)
 
-	// 5. Wastage & Total Batch Cost
+	// 6. Wastage & Total Batch Cost
 	c.WastageTotalCost = round2((c.IngredientsTotalCost + c.OperationsTotalCost) * (c.WastagePct / 100.0))
-	c.TotalBatchCost = round2(c.IngredientsTotalCost + c.OperationsTotalCost + c.PackagingTotalCost + c.WastageTotalCost)
+	c.TotalBatchCost = round2(c.IngredientsTotalCost + c.OperationsTotalCost + c.PackagingTotalCost + c.SaucesTotalCost + c.WastageTotalCost)
 
 	// 6. Portioning
 	if c.PortionWeightG > 0 && c.CookedWeightKG > 0 {

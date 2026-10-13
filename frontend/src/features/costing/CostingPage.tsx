@@ -10,11 +10,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { useCostCalculation } from './hooks/useCostCalculation';
-import { useCreateCosting, useUpdateCosting } from './hooks/useCostingApi';
+import { useCreateCosting, useUpdateCosting, useUnits } from './hooks/useCostingApi';
 import { CostingSummaryCards } from './components/CostingSummaryCards';
 import { YieldAndShrinkageSection } from './components/YieldAndShrinkageSection';
 import { IngredientsCostSection } from './components/IngredientsCostSection';
 import { OperationsCostSection } from './components/OperationsCostSection';
+import { SaucesCostSection } from './components/SaucesCostSection';
 import { PackagingCostSection } from './components/PackagingCostSection';
 import { PricingProfitSection } from './components/PricingProfitSection';
 import { SaveCostingModal } from './components/SaveCostingModal';
@@ -35,12 +36,18 @@ export function CostingPage() {
     addOperation,
     updateOperation,
     removeOperation,
+    addSauce,
+    updateSauce,
+    removeSauce,
     addPackaging,
     updatePackaging,
     removePackaging,
     loadCalculation,
     resetDefaults,
   } = useCostCalculation();
+
+  // Load units from master data
+  const { data: units = [] } = useUnits();
 
   // Modals state
   const [saveModalOpen, setSaveModalOpen] = useState(false);
@@ -169,6 +176,7 @@ export function CostingPage() {
       {/* 3. Ingredients Section */}
       <IngredientsCostSection
         ingredients={formValues.ingredients}
+        units={units}
         totalCost={calculation.ingredientsTotalCost}
         onAdd={() => addIngredient()}
         onUpdate={updateIngredient}
@@ -184,7 +192,16 @@ export function CostingPage() {
         onRemove={removeOperation}
       />
 
-      {/* 5. Packaging Cost Section */}
+      {/* 5. Sauces Cost Section */}
+      <SaucesCostSection
+        sauces={formValues.sauces || []}
+        totalCost={calculation.saucesTotalCost || 0}
+        onAdd={addSauce}
+        onUpdate={updateSauce}
+        onRemove={removeSauce}
+      />
+
+      {/* 6. Packaging Cost Section */}
       <PackagingCostSection
         packaging={formValues.packaging}
         totalCost={calculation.packagingTotalCost}

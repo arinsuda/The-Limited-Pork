@@ -27,6 +27,16 @@ export interface PackagingCostItem {
   totalCost: number;
 }
 
+export interface SauceCostItem {
+  id: string;
+  recipeId?: string;
+  name: string;
+  portionSize: string;
+  unitCost: number;
+  quantity: number;
+  totalCost: number;
+}
+
 export interface CostCalculation {
   id: string;
   name: string;
@@ -45,11 +55,13 @@ export interface CostCalculation {
   // Itemized lists
   ingredients: IngredientCostItem[];
   operations: OperationCostItem[];
+  sauces: SauceCostItem[];
   packaging: PackagingCostItem[];
 
   // Calculated Cost Breakdown
   ingredientsTotalCost: number;
   operationsTotalCost: number;
+  saucesTotalCost: number;
   packagingTotalCost: number;
   wastageTotalCost: number;
   totalBatchCost: number;
@@ -90,6 +102,7 @@ export interface CostingFormValues {
   wastagePct: number;
   ingredients: IngredientCostItem[];
   operations: OperationCostItem[];
+  sauces: SauceCostItem[];
   packaging: PackagingCostItem[];
   portionWeightG: number;
   targetFoodCostPct: number;

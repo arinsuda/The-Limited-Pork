@@ -523,7 +523,7 @@
       "subtotal": "รวมค่าใช้จ่ายดำเนินงาน"
     },
     "packaging_section": {
-      "title": "3. บรรจุภัณฑ์และอุปกรณ์ (Packaging & Disposables)",
+      "title": "4. บรรจุภัณฑ์และอุปกรณ์ (Packaging & Disposables)",
       "subtitle": "กล่องบรรจุภัณฑ์, ถ้วยน้ำจิ้ม, กระดาษซับมัน, สติ๊กเกอร์โลโก้",
       "add_packaging": "เพิ่มบรรจุภัณฑ์",
       "item_name": "รายการบรรจุภัณฑ์",
@@ -532,8 +532,23 @@
       "total_cost": "ต้นทุนรวม",
       "subtotal": "รวมค่าบรรจุภัณฑ์"
     },
+    "sauces_section": {
+      "title": "3. ต้นทุนน้ำจิ้มและเครื่องเคียง (Dipping Sauces & Condiments)",
+      "subtitle": "วิเคราะห์ต้นทุนน้ำจิ้มแต่ละสูตรในชุดเสิร์ฟ สามารถเพิ่มได้หลายรายการ",
+      "add_sauce": "เพิ่มรายการน้ำจิ้ม",
+      "item_name": "ชื่อน้ำจิ้ม / สูตร",
+      "portion_size": "ขนาดต่อถ้วย/เสิร์ฟ",
+      "unit_cost": "ต้นทุนต่อถ้วย (฿)",
+      "quantity": "จำนวนถ้วยต่อ Batch",
+      "total_cost": "ต้นทุนรวม",
+      "subtotal": "รวมต้นทุนน้ำจิ้ม",
+      "quick_add": "เพิ่มน้ำจิ้มยอดนิยม",
+      "sauce_sweet_soy": "น้ำจิ้มซีอิ๊วดำหวานพริกดอง (30 ml)",
+      "sauce_seafood": "น้ำจิ้มซีฟู้ดมะนาวสด (30 ml)",
+      "sauce_jaew": "น้ำจิ้มแจ่วข้าวคั่วพริกป่น (30 ml)"
+    },
     "pricing_section": {
-      "title": "4. การตัดแบ่งขายและการตั้งราคา (Portioning & Pricing Strategy)",
+      "title": "5. การตัดแบ่งขายและการตั้งราคา (Portioning & Pricing Strategy)",
       "subtitle": "วิเคราะห์ราคาขายแนะนำตามเป้าหมาย Food Cost % และ Margin % พร้อมคำนวณจุดคุ้มทุน",
       "portion_weight": "ขนาดต่อหน่วยขาย / กล่อง (กรัม)",
       "custom_portion": "ระบุน้ำหนักเอง (กรัม)",

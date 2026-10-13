@@ -523,7 +523,7 @@
       "subtotal": "Total Operations Cost"
     },
     "packaging_section": {
-      "title": "3. Packaging & Disposables",
+      "title": "4. Packaging & Disposables",
       "subtitle": "Kraft boxes, sauce cups with lids, greaseproof paper, branded stickers, bags",
       "add_packaging": "Add Packaging",
       "item_name": "Packaging Item",
@@ -532,8 +532,23 @@
       "total_cost": "Total Cost",
       "subtotal": "Total Packaging Cost"
     },
+    "sauces_section": {
+      "title": "3. Dipping Sauces & Condiments",
+      "subtitle": "Itemized dipping sauce costs included with meal sets. Supports multiple sauce items.",
+      "add_sauce": "Add Dipping Sauce",
+      "item_name": "Sauce Name / Recipe",
+      "portion_size": "Portion Size (e.g. 30 ml)",
+      "unit_cost": "Cost per Cup (฿)",
+      "quantity": "Cups per Batch",
+      "total_cost": "Total Cost",
+      "subtotal": "Total Sauces Cost",
+      "quick_add": "Quick Add Popular",
+      "sauce_sweet_soy": "Sweet Dark Soy Sauce with Pickled Chili (30 ml)",
+      "sauce_seafood": "Fresh Lime Seafood Dipping Sauce (30 ml)",
+      "sauce_jaew": "Isan Toasted Rice Jaew Sauce (30 ml)"
+    },
     "pricing_section": {
-      "title": "4. Portioning & Pricing Strategy",
+      "title": "5. Portioning & Pricing Strategy",
       "subtitle": "Analyze recommended selling prices based on target Food Cost % and Margin %, with break-even units",
       "portion_weight": "Portion Size (Grams)",
       "custom_portion": "Custom Portion (g)",
