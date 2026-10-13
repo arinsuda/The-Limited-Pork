@@ -31,7 +31,7 @@ services:
         value: "true"
       # Update with your Cloudflare Pages URL once deployed
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://*.pages.dev,http://localhost:5173"
+        value: "https://*.pages.dev,http://localhost:5173,https://localhost,http://localhost,capacitor://localhost"
       # Cloudflare R2 Object Storage credentials
       - key: MINIO_ENDPOINT
         value: "fdcbd02b62953907f96206461ae00d94.r2.cloudflarestorage.com"

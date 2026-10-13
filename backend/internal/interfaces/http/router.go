@@ -36,9 +36,30 @@ func NewRouter(
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	// Build CORS allowed origins, always ensuring mobile Capacitor origins are included
+	allowedOrigins := append([]string{}, cfg.CORSAllowedOrigins...)
+	mobileOrigins := []string{
+		"https://localhost",
+		"http://localhost",
+		"capacitor://localhost",
+		"ionic://localhost",
+	}
+	for _, mo := range mobileOrigins {
+		found := false
+		for _, ao := range allowedOrigins {
+			if ao == mo {
+				found = true
+				break
+			}
+		}
+		if !found {
+			allowedOrigins = append(allowedOrigins, mo)
+		}
+	}
+
 	// CORS
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   cfg.CORSAllowedOrigins,
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Request-ID", "Accept-Language"},
 		ExposedHeaders:   []string{"X-Request-ID", "X-RateLimit-Remaining"},

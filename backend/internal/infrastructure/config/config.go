@@ -60,7 +60,7 @@ type Config struct {
 	CookieDomain   string `env:"COOKIE_DOMAIN" envDefault:""`
 
 	// CORS
-	CORSAllowedOrigins []string `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:5173,http://localhost:8080,http://localhost:8081"`
+	CORSAllowedOrigins []string `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:5173,http://localhost:8080,http://localhost:8081,https://localhost,http://localhost,capacitor://localhost"`
 
 	// Rate limiting
 	RateLimitLoginPerMin int `env:"RATE_LIMIT_LOGIN_PER_MINUTE" envDefault:"10"`
