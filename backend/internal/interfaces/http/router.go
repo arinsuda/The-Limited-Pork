@@ -20,6 +20,7 @@ type Handlers struct {
 	Trial        *handler.TrialHandler
 	Attachment   *handler.AttachmentHandler
 	Notification *handler.NotificationHandler
+	Costing      *handler.CostingHandler
 	Ops          *handler.OpsHandler
 }
 
@@ -217,6 +218,17 @@ func NewRouter(
 				tr.With(middleware.RequirePermission("trials.write")).Post("/{id}/outcome", h.Trial.UpdateOutcome)
 				tr.With(middleware.RequirePermission("trials.evaluate")).Post("/{id}/evaluations", h.Trial.AddEvaluation)
 				tr.With(middleware.RequirePermission("trials.write")).Delete("/{id}/evaluations/{evaluationId}", h.Trial.DeleteEvaluation)
+			})
+
+			// Costing
+			protected.Route("/costings", func(cost chi.Router) {
+				cost.With(middleware.RequirePermission("costing.read")).Get("/", h.Costing.List)
+				cost.With(middleware.RequirePermission("costing.write")).Post("/", h.Costing.Create)
+				cost.With(middleware.RequirePermission("costing.read")).Post("/simulate", h.Costing.Simulate)
+				cost.With(middleware.RequirePermission("costing.read")).Get("/recipe-template/{recipeId}", h.Costing.GetRecipeTemplate)
+				cost.With(middleware.RequirePermission("costing.read")).Get("/{id}", h.Costing.GetByID)
+				cost.With(middleware.RequirePermission("costing.write")).Put("/{id}", h.Costing.Update)
+				cost.With(middleware.RequirePermission("costing.write")).Delete("/{id}", h.Costing.Delete)
 			})
 
 			// Attachments

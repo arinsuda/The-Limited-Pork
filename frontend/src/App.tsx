@@ -41,6 +41,9 @@ const EquipmentChecklistPage = lazy(() =>
 const UsersPage = lazy(() =>
   import('@/features/users/UsersPage').then((m) => ({ default: m.UsersPage })),
 );
+const CostingPage = lazy(() =>
+  import('@/features/costing/CostingPage').then((m) => ({ default: m.CostingPage })),
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -151,6 +154,7 @@ export function App() {
                 <Route path="trials/:id" element={<TrialDetailPage />} />
                 <Route path="masterdata" element={<MasterDataPage />} />
                 <Route path="checklist" element={<EquipmentChecklistPage />} />
+                <Route path="costing" element={<CostingPage />} />
                 <Route path="users" element={<UsersPage />} />
                 <Route path="*" element={<Navigate to="/recipes" replace />} />
               </Route>

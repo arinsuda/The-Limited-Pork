@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { UtensilsCrossed, FlaskConical, GitCompare, ClipboardCheck, Database, Users } from 'lucide-react';
+import { UtensilsCrossed, FlaskConical, GitCompare, ClipboardCheck, Database, Users, Calculator } from 'lucide-react';
 
 export interface NavItem {
   /** Route path. */
@@ -54,6 +54,13 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ClipboardCheck,
     permission: null,
     mobilePrimary: true,
+  },
+  {
+    to: '/costing',
+    labelKey: 'nav.costing',
+    shortLabelKey: 'nav.costing_short',
+    icon: Calculator,
+    permission: 'costing.read',
   },
   {
     to: '/masterdata',

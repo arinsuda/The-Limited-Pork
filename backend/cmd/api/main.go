@@ -119,6 +119,7 @@ func main() {
 	attRepo := postgres.NewAttachmentRepo(pool)
 	notifRepo := postgres.NewNotificationRepo(pool)
 	auditRepo := postgres.NewAuditRepo(pool)
+	costingRepo := postgres.NewCostingRepo(pool)
 
 	// 6. Outbox Dispatcher
 	outboxDispatcher := application.NewOutboxDispatcher(pool, notifRepo, hub, clock, idGen, cfg)
@@ -132,6 +133,7 @@ func main() {
 	mdService := application.NewMasterDataService(mdRepo, clock, idGen, hub)
 	recipeService := application.NewRecipeService(recipeRepo, mdRepo, attRepo, storage, outboxDispatcher, txManager, clock, idGen, hub, cfg)
 	trialService := application.NewTrialService(trialRepo, recipeRepo, mdRepo, attRepo, storage, outboxDispatcher, txManager, clock, idGen, hub, cfg)
+	costingService := application.NewCostingService(costingRepo, recipeRepo, mdRepo, clock, idGen)
 	attService := application.NewAttachmentService(attRepo, storage, clock, idGen, cfg)
 	notifService := application.NewNotificationService(notifRepo, cacheClient, cfg)
 
@@ -144,6 +146,7 @@ func main() {
 		Trial:        handler.NewTrialHandler(trialService, cfg),
 		Attachment:   handler.NewAttachmentHandler(attService, cfg),
 		Notification: handler.NewNotificationHandler(notifService, hub, cacheClient, cfg),
+		Costing:      handler.NewCostingHandler(costingService, cfg),
 		Ops:          handler.NewOpsHandler(pool, cacheClient, storage, auditRepo, cfg),
 	}
 

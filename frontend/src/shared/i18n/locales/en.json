@@ -12,6 +12,8 @@
     "trials_compare_short": "Compare",
     "checklist": "Equipment & Checklist",
     "checklist_short": "Equipment",
+    "costing": "Cost Calculation",
+    "costing_short": "Costing",
     "masterdata": "Master Data",
     "masterdata_short": "Master Data",
     "users": "Users & Roles",
@@ -465,6 +467,110 @@
     "new_password": "New Password",
     "confirm_force_reset": "Confirm Password Reset",
     "force_reset_success": "Password for {{name}} reset successfully"
+  },
+  "costing": {
+    "title": "Cost of Goods Sold & Margin Calculator",
+    "subtitle": "Calculate real cost per cooked kg and per portion with cooking yield shrinkage, gross profit margin & break-even analysis",
+    "btn_import_recipe": "Import from Recipe",
+    "btn_history": "Saved Calculations",
+    "btn_reset": "Reset Defaults",
+    "btn_save": "Save Costing",
+    "summary": {
+      "cost_per_cooked_kg": "Cost / Cooked KG",
+      "cost_per_portion": "Cost / Portion",
+      "recommended_price": "Rec. Price (Margin)",
+      "margin_pct": "Gross Margin %",
+      "food_cost_pct": "Food Cost %",
+      "batch_profit": "Batch Gross Profit",
+      "yield_badge": "Yield {{yield}}%",
+      "rec_margin_badge": "Target Margin {{margin}}%",
+      "profit_portion": "฿{{profit}}/portion profit",
+      "food_cost_target": "Target {{target}}%",
+      "break_even": "Break-even: {{count}} boxes"
+    },
+    "yield_section": {
+      "title": "Weight & Yield Factor (Cooking Shrinkage Loss)",
+      "subtitle": "Reflects fat rendering and moisture evaporation loss during boiling, roasting, and frying",
+      "raw_weight": "Raw Pork Weight (KG)",
+      "cooked_weight": "Cooked Weight Output (KG)",
+      "yield_pct": "Cooking Yield %",
+      "shrinkage_pct": "Shrinkage Loss %",
+      "wastage_pct": "Storefront Wastage / Buffer (%)",
+      "yield_tip_title": "Core Crispy Pork Financial KPI",
+      "yield_hint": "Crispy pork typically yields 55% - 65% because water evaporates and fat renders out during roasting and frying. True costing must be based on cooked weight.",
+      "yield_low_warning": "Yield under 50% may indicate excessive fat content or overcooking."
+    },
+    "ingredients_section": {
+      "title": "1. Ingredients & Raw Materials Cost",
+      "subtitle": "Accounts for purchase prices and prep trim loss percentage before cooking",
+      "add_ingredient": "Add Ingredient",
+      "name": "Ingredient Name",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "unit_price": "Unit Price (฿)",
+      "trim_loss": "Trim Loss",
+      "total_cost": "Total Cost",
+      "subtotal": "Total Raw Materials Cost"
+    },
+    "operations_section": {
+      "title": "2. Operations & Utility Cost",
+      "subtitle": "LPG cooking gas, oven electricity, and direct production labor per batch",
+      "add_operation": "Add Utility / Labor",
+      "item_name": "Cost Item",
+      "rate": "Rate (฿/unit or hr)",
+      "usage": "Usage",
+      "total_cost": "Total Cost",
+      "subtotal": "Total Operations Cost"
+    },
+    "packaging_section": {
+      "title": "3. Packaging & Disposables",
+      "subtitle": "Kraft boxes, sauce cups with lids, greaseproof paper, branded stickers, bags",
+      "add_packaging": "Add Packaging",
+      "item_name": "Packaging Item",
+      "unit_price": "Unit Price (฿)",
+      "quantity": "Quantity / Batch",
+      "total_cost": "Total Cost",
+      "subtotal": "Total Packaging Cost"
+    },
+    "pricing_section": {
+      "title": "4. Portioning & Pricing Strategy",
+      "subtitle": "Analyze recommended selling prices based on target Food Cost % and Margin %, with break-even units",
+      "portion_weight": "Portion Size (Grams)",
+      "custom_portion": "Custom Portion (g)",
+      "total_portions": "Total Portions per Batch",
+      "cost_per_portion": "True Cost per Portion",
+      "target_food_cost": "Target Food Cost % (Rec. 30-35%)",
+      "recommended_by_food_cost": "Rec. Price (Food Cost)",
+      "target_margin": "Target Gross Margin % (Rec. 60-65%)",
+      "recommended_by_margin": "Rec. Price (Margin)",
+      "actual_selling_price": "Actual Selling Price (THB)",
+      "gross_profit_per_portion": "Gross Profit / Portion",
+      "actual_margin_pct": "Actual Margin %",
+      "total_revenue": "Estimated Batch Revenue",
+      "total_gross_profit": "Estimated Batch Gross Profit",
+      "break_even_hint": "Selling {{count}} portions covers total batch manufacturing costs."
+    },
+    "history_modal": {
+      "title": "Saved Costing History",
+      "no_history": "No saved costing calculations yet.",
+      "delete_confirm": "Are you sure you want to delete costing calculation \"{{name}}\"?",
+      "loaded_toast": "Costing data loaded successfully"
+    },
+    "save_modal": {
+      "title": "Save Cost Calculation",
+      "name_label": "Calculation Name",
+      "notes_label": "Notes / Market Source",
+      "save_success": "Cost calculation saved successfully",
+      "update_success": "Cost calculation updated successfully"
+    },
+    "import_modal": {
+      "title": "Import Ingredients from Recipe",
+      "select_recipe": "Select Crispy Pork Recipe",
+      "select_placeholder": "-- Choose a recipe --",
+      "import_btn": "Import Ingredients",
+      "hint": "Automatically imports ingredient quantities, units, and expected yield % from the recipe's latest version.",
+      "success_toast": "Recipe ingredients imported successfully"
+    }
   },
   "errors": {
     "VALIDATION_FAILED": "Validation failed, please check the form",

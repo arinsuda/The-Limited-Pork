@@ -12,6 +12,8 @@
     "trials_compare_short": "เปรียบเทียบ",
     "checklist": "อุปกรณ์ & แผนงาน",
     "checklist_short": "อุปกรณ์",
+    "costing": "คำนวณต้นทุนขาย",
+    "costing_short": "ต้นทุน",
     "masterdata": "ข้อมูลหลัก",
     "masterdata_short": "ข้อมูลหลัก",
     "users": "ผู้ใช้งานและสิทธิ์",
@@ -465,6 +467,110 @@
     "new_password": "รหัสผ่านใหม่ที่ต้องการตั้ง",
     "confirm_force_reset": "ยืนยันการเปลี่ยนรหัสผ่าน",
     "force_reset_success": "เปลี่ยนรหัสผ่านสำหรับ {{name}} สำเร็จแล้ว"
+  },
+  "costing": {
+    "title": "คำนวณต้นทุนขายและวิเคราะห์กำไร",
+    "subtitle": "คำนวณต้นทุนต่อหมูกรอบสุก 1 กก. และต้นทุนต่อกล่องอย่างละเอียด พร้อมวิเคราะห์กำไรและจุดคุ้มทุน",
+    "btn_import_recipe": "ดึงข้อมูลจากสูตร",
+    "btn_history": "ประวัติที่บันทึกไว้",
+    "btn_reset": "รีเซ็ตค่าเริ่มต้น",
+    "btn_save": "บันทึกข้อมูลต้นทุน",
+    "summary": {
+      "cost_per_cooked_kg": "ต้นทุนต่อ กก. สุก",
+      "cost_per_portion": "ต้นทุนต่อหน่วยขาย",
+      "recommended_price": "ราคาแนะนำ (ตาม Margin)",
+      "margin_pct": "กำไรขั้นต้น (Margin %)",
+      "food_cost_pct": "สัดส่วน Food Cost %",
+      "batch_profit": "กำไรสุทธิรวม Batch",
+      "yield_badge": "Yield {{yield}}%",
+      "rec_margin_badge": "เป้าหมาย Margin {{margin}}%",
+      "profit_portion": "กำไร ฿{{profit}}/กล่อง",
+      "food_cost_target": "เป้าหมาย {{target}}%",
+      "break_even": "จุดคุ้มทุน {{count}} กล่อง"
+    },
+    "yield_section": {
+      "title": "น้ำหนักและอัตราผลผลิต (Yield & Shrinkage Loss)",
+      "subtitle": "สะท้อนการสูญเสียน้ำหนักจากการรีดน้ำมันและการระเหยระหว่างต้ม อบ และทอด",
+      "raw_weight": "น้ำหนักหมูดิบก่อนทำ (กก.)",
+      "cooked_weight": "น้ำหนักหมูกรอบสุกจริง (กก.)",
+      "yield_pct": "อัตราผลผลิต Yield %",
+      "shrinkage_pct": "อัตราการหดตัว Shrinkage %",
+      "wastage_pct": "เผื่อสูญเสียหน้าร้าน / ตัดแต่ง (%)",
+      "yield_tip_title": "หัวใจสำคัญของหมูกรอบ",
+      "yield_hint": "หมูกรอบทั่วไปมี Yield ประมาณ 55% - 65% เนื่องจากน้ำมันและน้ำระเหยออกไประหว่างกระบวนการปรุง การคำนวณต้นทุนจึงต้องอิงตามน้ำหนักสุกจริง",
+      "yield_low_warning": "อัตราผลผลิต (Yield) ต่ำกว่า 50% อาจเกิดจากการอบ/ทอดนานเกินไปหรือหมูมีมันมากเกินไป"
+    },
+    "ingredients_section": {
+      "title": "1. ต้นทุนวัตถุดิบและเครื่องปรุง (Ingredients & Raw Materials)",
+      "subtitle": "คำนวณราคาซื้อจริงและเปอร์เซ็นต์การตัดแต่ง (Trim Loss) ก่อนปรุง",
+      "add_ingredient": "เพิ่มวัตถุดิบ",
+      "name": "รายการวัตถุดิบ",
+      "quantity": "ปริมาณ",
+      "unit": "หน่วย",
+      "unit_price": "ราคาซื้อ (฿/หน่วย)",
+      "trim_loss": "Trim Loss",
+      "total_cost": "ต้นทุนรวม",
+      "subtotal": "รวมต้นทุนวัตถุดิบทั้งหมด"
+    },
+    "operations_section": {
+      "title": "2. ต้นทุนการดำเนินงานและพลังงาน (Operations & Energy)",
+      "subtitle": "ค่าแก๊ส LPG, ค่าไฟฟ้าเตาอบ, และค่าแรงงานทางตรงต่อ Batch",
+      "add_operation": "เพิ่มค่าใช้จ่ายดำเนินงาน",
+      "item_name": "รายการค่าใช้จ่าย",
+      "rate": "อัตราค่าใช้จ่าย (฿/หน่วย)",
+      "usage": "จำนวนที่ใช้",
+      "total_cost": "ต้นทุนรวม",
+      "subtotal": "รวมค่าใช้จ่ายดำเนินงาน"
+    },
+    "packaging_section": {
+      "title": "3. บรรจุภัณฑ์และอุปกรณ์ (Packaging & Disposables)",
+      "subtitle": "กล่องบรรจุภัณฑ์, ถ้วยน้ำจิ้ม, กระดาษซับมัน, สติ๊กเกอร์โลโก้",
+      "add_packaging": "เพิ่มบรรจุภัณฑ์",
+      "item_name": "รายการบรรจุภัณฑ์",
+      "unit_price": "ราคาต่อชิ้น (฿)",
+      "quantity": "จำนวนต่อ Batch",
+      "total_cost": "ต้นทุนรวม",
+      "subtotal": "รวมค่าบรรจุภัณฑ์"
+    },
+    "pricing_section": {
+      "title": "4. การตัดแบ่งขายและการตั้งราคา (Portioning & Pricing Strategy)",
+      "subtitle": "วิเคราะห์ราคาขายแนะนำตามเป้าหมาย Food Cost % และ Margin % พร้อมคำนวณจุดคุ้มทุน",
+      "portion_weight": "ขนาดต่อหน่วยขาย / กล่อง (กรัม)",
+      "custom_portion": "ระบุน้ำหนักเอง (กรัม)",
+      "total_portions": "จำนวนกล่องที่ได้ต่อ Batch",
+      "cost_per_portion": "ต้นทุนจริงต่อกล่อง",
+      "target_food_cost": "เป้าหมาย Food Cost % (แนะนำ 30-35%)",
+      "recommended_by_food_cost": "ราคาขายแนะนำ",
+      "target_margin": "เป้าหมาย Gross Margin % (แนะนำ 60-65%)",
+      "recommended_by_margin": "ราคาขายแนะนำ",
+      "actual_selling_price": "ราคาขายจริงต่อกล่อง (บาท)",
+      "gross_profit_per_portion": "กำไรขั้นต้นต่อกล่อง",
+      "actual_margin_pct": "กำไรขั้นต้นจริง %",
+      "total_revenue": "ยอดขายรวมต่อ Batch",
+      "total_gross_profit": "กำไรขั้นต้นรวมต่อ Batch",
+      "break_even_hint": "ขายเพียง {{count}} กล่อง จะคืนทุนค่าวัตถุดิบและค่าผลิตทั้ง Batch"
+    },
+    "history_modal": {
+      "title": "ประวัติการคำนวณต้นทุนที่บันทึกไว้",
+      "no_history": "ยังไม่มีประวัติการคำนวณต้นทุนที่บันทึกไว้",
+      "delete_confirm": "คุณต้องการลบข้อมูลต้นทุน \"{{name}}\" ใช่หรือไม่?",
+      "loaded_toast": "โหลดข้อมูลต้นทุนเรียบร้อยแล้ว"
+    },
+    "save_modal": {
+      "title": "บันทึกข้อมูลการคำนวณต้นทุน",
+      "name_label": "ชื่อชุดข้อมูลต้นทุน",
+      "notes_label": "หมายเหตุเพิ่มเติม",
+      "save_success": "บันทึกข้อมูลต้นทุนสำเร็จแล้ว",
+      "update_success": "อัปเดตข้อมูลต้นทุนสำเร็จแล้ว"
+    },
+    "import_modal": {
+      "title": "ดึงรายการวัตถุดิบจากสูตร",
+      "select_recipe": "เลือกสูตรหมูกรอบที่ต้องการดึงข้อมูล",
+      "select_placeholder": "-- กรุณาเลือกสูตร --",
+      "import_btn": "ดึงข้อมูลสูตร",
+      "hint": "ระบบจะดึงรายการวัตถุดิบ ปริมาณ และอัตรา Yield % ของสูตรเวอร์ชันล่าสุดมาใส่ในแบบฟอร์มให้อัตโนมัติ",
+      "success_toast": "ดึงข้อมูลจากสูตรเรียบร้อยแล้ว"
+    }
   },
   "errors": {
     "VALIDATION_FAILED": "ข้อมูลไม่ถูกต้องตามรูปแบบ กรุณาตรวจสอบ",
